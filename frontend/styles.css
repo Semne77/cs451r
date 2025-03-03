@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@theme {
+    --color-primary: #202020;
+    --font-sans: InterVariable;
+}
