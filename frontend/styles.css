@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-    --color-primary: #202020;
+    --color-primary: #121113;
+    --color-secondary: #c9184a;
+    --color-greytext: #bcb8b1;
+    --color-darkGrey: #343a40;
     --font-sans: InterVariable;
 }

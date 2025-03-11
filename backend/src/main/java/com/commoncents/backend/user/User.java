@@ -4,13 +4,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users")
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @SequenceGenerator(name = "user_sequence", sequenceName = "user_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_sequence")
     private int userId;
     private String firstName;
     private String lastName;
@@ -21,7 +23,7 @@ public class User {
     public User() {
         this.userId = 0;
         this.firstName = "";
-        this.firstName = "";
+        this.lastName = "";
         this.email = "";
         this.phone = "";
         this.password = "";
@@ -68,7 +70,7 @@ public class User {
         return password;
     }
 
-    public void setClientId(int userId) {
+    public void setUserId(int userId) {
         this.userId = userId;
     }
 
