@@ -1,8 +1,8 @@
 import { Coins } from 'lucide-react';
-import { LoginForm } from "@/components/LoginForm"
+import { RegisterForm } from "@/components/RegisterForm"
 import landingGraphic from "../assets/landingGraphic.jpg"
 
-export default function Landing() {
+export default function SignUp() {
 
     return (
         <div className="grid min-h-svh lg:grid-cols-2">
@@ -17,7 +17,7 @@ export default function Landing() {
                 </div>
                 <div className="flex flex-1 items-center justify-center">
                     <div className="w-fit">
-                        <LoginForm />
+                        <RegisterForm />
                     </div>
                 </div>
             </div>

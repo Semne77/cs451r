@@ -22,11 +22,20 @@ public class User {
 
     public User() {
         this.userId = 0;
+        this.firstName = "unknown";
+        this.lastName = "unknown";
+        this.email = "unknown";
+        this.phone = "unknown";
+        this.password = "unknown";
+    }
+
+    public User(String email, String password) {
+        this.userId = 0;
         this.firstName = "";
         this.lastName = "";
-        this.email = "";
+        this.email = email;
         this.phone = "";
-        this.password = "";
+        this.password = password;
     }
 
     public User(int id, String firstname, String lastname, String email, String phone, String password) {
