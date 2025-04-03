@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, } from "@/components/ui/card"
 import Sidebar from "@/components/Sidebar";
+import TransactionChart from '@/components/TransactionChart';
 import axios from "axios";
 
 function EmptyFieldMessage({ field }) {
@@ -277,7 +278,10 @@ export default function Dashboard() {
                 <div className="flex mt-4">
                     <div className="flex-col w-185 h-145 bg-card rounded-2xl">
                         <p className="text-white ml-5 mt-6 text-sm font-light">Overview</p>
-                        <EmptyFieldMessage field={"data"} />
+                        <TransactionChart
+                        transactions={filteredTransactions}
+                        timeRange={timeRange}
+                        />
                     </div>
                     <div className="flex-col w-86 h-145 ml-6 bg-card rounded-2xl">
                         <p className="text-white ml-5 mt-6 text-sm font-light">Goals</p>
