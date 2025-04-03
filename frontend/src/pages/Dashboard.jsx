@@ -43,49 +43,169 @@ export default function Dashboard() {
     fetchTransactions();
     }, [params.id]);
 
-    const [timeRange, setTimeRange] = useState("Everything");
+    const [timeRange, setTimeRange] = useState("Week");
+
+    const [currentWindowStart, setCurrentWindowStart] = useState(new Date());
+
+    const getDateRange = (range, baseDate) => {
+        const date = new Date(baseDate);
+        date.setHours(0, 0, 0, 0); // normalize time
+      
+        let start, end;
+      
+        switch (range) {
+          case "Day":
+            start = new Date(date);
+            end = new Date(date);
+            break;
+      
+          case "Week": {
+            const day = date.getDay(); // 0 = Sunday
+            start = new Date(date);
+            start.setDate(date.getDate() - day); // back to Sunday
+      
+            end = new Date(start);
+            end.setDate(start.getDate() + 6); // to Saturday
+            break;
+          }
+      
+          case "Month": {
+            start = new Date(date.getFullYear(), date.getMonth(), 1);
+            end = new Date(date.getFullYear(), date.getMonth() + 1, 0); // last day of this month
+            break;
+          }
+      
+          case "Year": {
+            start = new Date(date.getFullYear(), 0, 1);
+            end = new Date(date.getFullYear(), 11, 31);
+            break;
+          }
+      
+          default:
+            start = null;
+            end = null;
+        }
+      
+        return { start, end };
+    };
+      
+
+    useEffect(() => {
+        if (timeRange !== "Everything") {
+          const now = new Date();
+          const { start } = getDateRange(timeRange, now); // 🆕 align to calendar period
+          setCurrentWindowStart(start);
+        } else {
+          setCurrentWindowStart(null);
+        }
+    }, [timeRange]);
+      
 
     const timeRanges = ["Day", "Week", "Month", "Year", "Everything"];
 
     const calculateTotals = () => {
-        const now = new Date();
         let filtered = transactions;
       
-        if (timeRange !== "Everything") {
-            const msPer = {
-                Day: 1000 * 60 * 60 * 24,
-                Week: 1000 * 60 * 60 * 24 * 7,
-                Month: 1000 * 60 * 60 * 24 * 30,
-                Year: 1000 * 60 * 60 * 24 * 365,
-            };
+        if (timeRange !== "Everything" && currentWindowStart) {
+          const { start, end } = getDateRange(timeRange, currentWindowStart);
       
-            const cutoff = new Date(now.getTime() - msPer[timeRange]);
-      
-            filtered = transactions.filter((t) => {
-                const txDate = new Date(t.transactionDate);
-                return txDate >= cutoff;
-            });
+          filtered = transactions.filter((t) => {
+            const txDate = new Date(t.transactionDate);
+            return txDate >= start && txDate <= end;
+          });
         }
       
         let income = 0;
         let spending = 0;
       
         for (const t of filtered) {
-            const amt = parseFloat(t.amount);
-            if (amt > 0) income += amt;
-            else spending += -amt; // make it positive
+          const amt = parseFloat(t.amount);
+          if (amt > 0) income += amt;
+          else spending += -amt;
         }
       
-        const savings = income - spending;
-      
         return {
-            income: income.toFixed(2),
-            spending: spending.toFixed(2),
-            savings: savings.toFixed(2),
+          income: income.toFixed(2),
+          spending: spending.toFixed(2),
+          savings: (income - spending).toFixed(2),
         };
     };
+      
+    
 
     const { income, spending, savings } = calculateTotals();
+
+    const getFilteredTransactions = () => {
+        if (timeRange === "Everything" || !currentWindowStart) return transactions;
+      
+        const { start, end } = getDateRange(timeRange, currentWindowStart);
+      
+        return transactions.filter((t) => {
+          const txDate = new Date(t.transactionDate);
+          return txDate >= start && txDate <= end;
+        });
+    };
+      
+    const filteredTransactions = getFilteredTransactions();
+      
+    const shiftWindow = (direction) => {
+        const current = new Date(currentWindowStart);
+        let newDate = new Date(current);
+      
+        switch (timeRange) {
+          case "Day":
+            newDate.setDate(current.getDate() + direction * 1);
+            break;
+          case "Week":
+            newDate.setDate(current.getDate() + direction * 7);
+            break;
+          case "Month":
+            newDate.setMonth(current.getMonth() + direction * 1);
+            break;
+          case "Year":
+            newDate.setFullYear(current.getFullYear() + direction * 1);
+            break;
+          default:
+            return;
+        }
+      
+        setCurrentWindowStart(newDate);
+    };
+      
+    const goBackward = () => shiftWindow(-1);
+    const goForward = () => shiftWindow(1);
+    
+    const formatDate = (dateInput) => {
+        const date = new Date(dateInput);
+      
+        if (isNaN(date.getTime())) {
+          return "Invalid Date";
+        }
+      
+        return date.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+    };
+      
+    const rangeDisplay = () => {
+        if (!currentWindowStart || timeRange === "Everything") return "All Time";
+      
+        const { start, end } = getDateRange(timeRange, currentWindowStart);
+        return `${formatDate(start)} – ${formatDate(end)}`;
+    };
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const { end } = getDateRange(timeRange, currentWindowStart);
+
+    const forwardDisabled = end >= now;
+
+    const backwardDisabled = transactions.every(
+    (t) => new Date(t.transactionDate) >= getDateRange(timeRange, currentWindowStart).start
+    );
 
     return (
         <div className="flex">
@@ -104,6 +224,12 @@ export default function Dashboard() {
                     </option>
                     ))}
                 </select>
+                </div>
+                <div className="flex items-center gap-4 text-white mb-4">
+                <button onClick={goBackward} disabled={backwardDisabled}>◀</button>
+                <span>{rangeDisplay()}</span>
+                <button onClick={goForward} disabled={forwardDisabled}>▶</button>
+
                 </div>
                 <div className="w-277 h-fit mt-4 flex justify-between">
                     <div className="flex-col w-85 h-32 bg-card rounded-2xl">
@@ -132,6 +258,37 @@ export default function Dashboard() {
                         <p className="text-white ml-5 mt-6 text-sm font-light">Goals</p>
                         <EmptyFieldMessage field={"goals"} />
                     </div>
+                </div>
+                <div className="flex-col mt-4">
+                <div className="flex-col w-full bg-card rounded-2xl mt-4 p-5">
+                <p className="text-white text-sm font-light mb-3">Transactions</p>
+                {filteredTransactions.length === 0 ? (
+                    <p className="text-gray-400 text-xs font-light">No transactions in this time period</p>
+                ) : (
+                <ul className="text-white text-sm space-y-2 max-h-60 overflow-y-auto">
+                {filteredTransactions.map((tx) => {
+                    const isIncome = parseFloat(tx.amount) > 0;
+                    const displayAmount = Math.abs(parseFloat(tx.amount)).toFixed(2);
+                    const amountColor = isIncome ? "text-green-400" : "text-red-400";
+
+                    return (
+                    <li
+                        key={tx.id}
+                        className="flex justify-between items-start border-b border-gray-700 pb-2"
+                    >
+                        <div className="flex flex-col">
+                        <span className="font-medium">{tx.merchant || "Unknown"}</span>
+                        <span className="text-xs text-gray-400">
+                            {tx.category || "Uncategorized"} • {formatDate(tx.transactionDate)}
+                        </span>
+                        </div>
+                        <span className={`font-medium ${amountColor}`}>${displayAmount}</span>
+                    </li>
+                    );
+                })}
+                </ul>
+                )}
+                </div>
                 </div>
             </div>
         </div>
