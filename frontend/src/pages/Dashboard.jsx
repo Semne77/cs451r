@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, } from "@/components/ui/card"
 import Sidebar from "@/components/Sidebar";
+import axios from "axios";
 
 function EmptyFieldMessage({ field }) {
     return (
@@ -12,20 +13,31 @@ function EmptyFieldMessage({ field }) {
 export default function Dashboard() {
 
     const params = useParams();
+    const [firstName, setFirstName] = useState("");
 
-    // useEffect(async () => {
+    
 
-
-    //     let response = await axios.get(`http://localhost:8080/users/pullUserDashboardData/${params.id}`);
-    //     response = response.data;
-    // }, [])
+    
+    useEffect(() => {
+        const fetchUser = async () => {
+          try {
+            const res = await axios.get(`http://localhost:8080/users/${params.id}`);
+            setFirstName(res.data.firstName);
+          } catch (err) {
+            console.error("Failed to fetch user:", err);
+          }
+        };
+    
+        fetchUser();
+    }, [params.id]);
+    
 
 
     return (
         <div className="flex">
             <Sidebar />
             <div className=" ml-8 mt-4 flex-col">
-                <h1 className="text-white text-2xl font-bold">Welcome to your dashboard, Michael</h1>
+                <h1 className="text-white text-2xl font-bold">Welcome to your dashboard, {firstName || "loading"}</h1>
                 <div className="w-277 h-fit mt-4 flex justify-between">
                     <div className="flex-col w-85 h-32 bg-card rounded-2xl ">
                         <p className="text-white ml-7 mb-3 mt-6 text-sm font-light">Total Income</p>

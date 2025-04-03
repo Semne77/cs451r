@@ -26,8 +26,6 @@ export function LoginForm({ className, ...props }) {
         let response = await axios.post("http://localhost:8080/users/getUser", userInfo);
         response = response.data;
 
-        console.log(response)
-
         if (response.email === "unknown") {
             setValidLogIn(false);
         }
