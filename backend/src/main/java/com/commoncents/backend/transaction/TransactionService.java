@@ -22,4 +22,13 @@ public class TransactionService {
     public void deleteTransaction(int id) {
         transactionRepository.deleteById(id);
     }
+
+    public List<Transaction> saveAll(List<Transaction> transactions) {
+        return transactionRepository.saveAll(transactions);
+    }
+
+    public void deleteMany(List<Integer> ids) {
+        transactionRepository.deleteAllById(ids);
+    }
+
 }
