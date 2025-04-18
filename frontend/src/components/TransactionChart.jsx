@@ -19,6 +19,21 @@ const CATEGORY_COLORS = [
 ];
 
 const TransactionChart = ({ transactions, timeRange }) => {
+  const labelToDate = (label) => {
+    switch (timeRange) {
+      case "Everything":
+        return new Date(`${label}-01-01`);
+      case "Year":
+        return new Date(`${new Date().getFullYear()}-${label}-01`);
+      case "Month":
+      case "Week":
+        return new Date(label); // already localized string
+      case "Day":
+        return new Date(); // today
+      default:
+        return new Date(label);
+    }
+  };
   const grouped = useMemo(() => {
     const groups = {};
     const format = (d) => {
@@ -46,58 +61,53 @@ const TransactionChart = ({ transactions, timeRange }) => {
     return groups;
   }, [transactions, timeRange]);
 
+  const sortedLabels = Object.keys(grouped).sort(
+    (a, b) => labelToDate(a) - labelToDate(b)
+  );
+
+
   const allCategories = Array.from(
     new Set(Object.values(grouped).flatMap(obj => Object.keys(obj)))
   );
 
   const datasets = [];
-
   let colorIndex = 0;
-  
-  // First add income datasets
+
   for (const category of allCategories) {
-    const hasIncome = Object.values(grouped).some(
-      (entry) => entry[category]?.income > 0
-    );
+    const hasIncome = Object.values(grouped).some(entry => entry[category]?.income > 0);
     if (hasIncome) {
       datasets.push({
         label: category,
-        data: Object.keys(grouped).map(
-          (label) => grouped[label][category]?.income || 0
-        ),
+        data: sortedLabels.map(label => grouped[label]?.[category]?.income || 0),
         backgroundColor: CATEGORY_COLORS[colorIndex % CATEGORY_COLORS.length],
         stack: "income",
       });
       colorIndex++;
     }
   }
-  
-  // Then add expense datasets
+
   for (const category of allCategories) {
-    const hasExpense = Object.values(grouped).some(
-      (entry) => entry[category]?.expense > 0
-    );
+    const hasExpense = Object.values(grouped).some(entry => entry[category]?.expense > 0);
     if (hasExpense) {
       datasets.push({
         label: category,
-        data: Object.keys(grouped).map(
-          (label) => grouped[label][category]?.expense || 0
-        ),
+        data: sortedLabels.map(label => grouped[label]?.[category]?.expense || 0),
         backgroundColor: CATEGORY_COLORS[colorIndex % CATEGORY_COLORS.length],
         stack: "expense",
       });
       colorIndex++;
     }
   }
-  
+
 
   const chartData = {
-    labels: Object.keys(grouped),
+    labels: sortedLabels,
     datasets,
   };
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'bottom',
@@ -124,9 +134,9 @@ const TransactionChart = ({ transactions, timeRange }) => {
 
   return (
     <div className="mt-6 bg-card rounded-xl p-4">
-      <h3 className="text-white text-lg font-semibold mb-4">Transaction Summary</h3>
-      <Bar data={chartData} options={chartOptions} />
-
+      <div className="w-full h-[300px] min-w-0">
+        <Bar data={chartData} options={chartOptions} />
+      </div>
     </div>
   );
 };

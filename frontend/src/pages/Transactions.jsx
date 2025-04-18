@@ -1,0 +1,391 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, } from "@/components/ui/card"
+import Sidebar from "@/components/Sidebar";
+import AddTransaction from "../components/AddTransaction";
+import axios from "axios";
+
+function EmptyFieldMessage({ field }) {
+    return (
+        <div className="mt-64 text-gray-400 font-light text-xs text-center">No {field} to display</div>
+    )
+}
+
+export default function Transactions() {
+
+    const params = useParams();
+
+    const [transactions, setTransactions] = useState([]);
+
+    useEffect(() => {
+        const fetchTransactions = async () => {
+            try {
+                const res = await axios.get(`http://localhost:8080/transactions/${params.id}`);
+                setTransactions(res.data);
+            } catch (err) {
+                console.error("Failed to fetch transactions:", err);
+            }
+        };
+
+        fetchTransactions();
+    }, [params.id]);
+
+    const [selectedMerchants, setSelectedMerchants] = useState([]);
+    const [merchantQuery, setMerchantQuery] = useState("");
+    const [merchantSort, setMerchantSort] = useState(""); // none, a-z, z-a, total-asc, total-desc, recent, oldest, count-asc, count-desc
+
+    const [selectedCategories, setSelectedCategories] = useState([]);
+    const [categoryQuery, setCategoryQuery] = useState("");
+    const [categorySort, setCategorySort] = useState(""); // none, a-z, z-a, total-asc, total-desc, recent, oldest, count-asc, count-desc
+
+    const [dateMin, setDateMin] = useState(null);
+    const [dateMax, setDateMax] = useState(null);
+
+    const [amountMin, setAmountMin] = useState(null);
+    const [amountMax, setAmountMax] = useState(null);
+
+    const sortTransactions = (txs) => {
+        const groupBy = (txs, keyFn) =>
+            txs.reduce((acc, tx) => {
+                const key = keyFn(tx);
+                const amt = parseFloat(tx.amount);
+                const date = new Date(tx.transactionDate);
+
+                if (!acc[key]) {
+                    acc[key] = { total: 0, count: 0, recent: date, oldest: date };
+                }
+
+                acc[key].total += amt;
+                acc[key].count += 1;
+                if (date > acc[key].recent) acc[key].recent = date;
+                if (date < acc[key].oldest) acc[key].oldest = date;
+
+                return acc;
+            }, {});
+
+        const merchantGroup = groupBy(txs, (tx) => tx.merchant || "Unknown");
+        const categoryGroup = groupBy(txs, (tx) => tx.category || "Uncategorized");
+
+        const sortBy = {
+            "a-z": (a, b) => a.category.localeCompare(b.category),
+            "z-a": (a, b) => b.category.localeCompare(a.category),
+            "total-asc": (a, b) =>
+                categoryGroup[a.category]?.total - categoryGroup[b.category]?.total,
+            "total-desc": (a, b) =>
+                categoryGroup[b.category]?.total - categoryGroup[a.category]?.total,
+            "recent": (a, b) =>
+                new Date(categoryGroup[b.category]?.recent) -
+                new Date(categoryGroup[a.category]?.recent),
+            "oldest": (a, b) =>
+                new Date(categoryGroup[a.category]?.oldest) -
+                new Date(categoryGroup[b.category]?.oldest),
+            "count-asc": (a, b) =>
+                categoryGroup[a.category]?.count - categoryGroup[b.category]?.count,
+            "count-desc": (a, b) =>
+                categoryGroup[b.category]?.count - categoryGroup[a.category]?.count,
+        };
+
+        const sortKey =
+            merchantSort || categorySort; // prefer merchant if both selected
+
+        return sortKey ? txs.sort(sortBy[sortKey]) : txs;
+    };
+
+
+    const getFilteredTransactions = () => {
+        let filtered = [...transactions];
+
+        // Filter by date — only if both min and max are defined
+        if (dateMin && dateMax) {
+            filtered = filtered.filter(tx => {
+                const date = new Date(tx.transactionDate);
+                return date >= dateMin && date <= dateMax;
+            });
+        }
+
+        // Filter by amount — only if both min and max are defined
+        if (typeof amountMin === "number" && typeof amountMax === "number") {
+            filtered = filtered.filter(tx => {
+                const amt = Math.abs(parseFloat(tx.amount));
+                return amt >= amountMin && amt <= amountMax;
+            });
+        }
+
+        // Filter by merchant
+        if (selectedMerchants.length) {
+            filtered = filtered.filter(tx =>
+                selectedMerchants.includes(tx.merchant)
+            );
+        }
+
+        // Filter by category
+        if (selectedCategories.length) {
+            filtered = filtered.filter(tx =>
+                selectedCategories.includes(tx.category)
+            );
+        }
+
+        return sortTransactions(filtered);
+    };
+
+
+    const filteredTransactions = getFilteredTransactions();
+
+    const formatDate = (dateInput) => {
+        const date = new Date(dateInput);
+
+        if (isNaN(date.getTime())) {
+            return "Invalid Date";
+        }
+
+        return date.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    };
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const allCategories = [
+        "Wages", "Freelance", "Investments", "Gifts", "Refunds", "Credits", "Other Income",
+        "Rent", "Mortgage", "Maintenance", "Utilities", "Restaurants", "Supermarkets", "Gasoline", "Transit", "Parking",
+        "Insurance", "Medical Bills", "Merchandise", "Services", "Clothing", "Education", "Entertainment", "Donations",
+        "Payments", "Travels", "Taxes", "Other Expenses"
+    ];
+
+    const incomeCategories = [
+        "Wages", "Freelance", "Investments", "Gifts", "Refunds", "Credits", "Other Income"
+    ];
+
+    const expenseCategories = [
+        "Rent", "Mortgage", "Maintenance", "Utilities", "Restaurants", "Supermarkets", "Gasoline", "Transit", "Parking",
+        "Insurance", "Medical Bills", "Merchandise", "Services", "Clothing", "Education", "Entertainment", "Donations",
+        "Payments", "Travels", "Taxes", "Other Expenses"
+    ];
+
+    const categorySuggestions = allCategories.filter((cat) =>
+        cat.toLowerCase().includes(categoryQuery.toLowerCase()) &&
+        !selectedCategories.includes(cat)
+    );
+
+    const [showForm, setShowForm] = useState(false);
+    const [formData, setFormData] = useState({
+        type: "Expense",
+        merchant: "",
+        category: "",
+        transactionDate: new Date().toISOString().split("T")[0],
+        amount: ""
+    });
+
+    const handleDeleteFiltered = async () => {
+        const idsToDelete = filteredTransactions.map((tx) => tx.id);
+
+        try {
+            console.log("Deleting transactions: " + idsToDelete);
+            await axios.post("http://localhost:8080/transactions/deleteMany", idsToDelete);
+
+
+            // Update state to remove deleted transactions
+            setTransactions((prev) => prev.filter((tx) => !idsToDelete.includes(tx.id)));
+        } catch (err) {
+            console.error("Failed to delete transactions:", err);
+            alert("Something went wrong while deleting.");
+        }
+    };
+
+
+    return (
+        <div className="flex">
+            <Sidebar />
+            <div className="w-full h-screen mr-8 ml-8 mt-4 flex-col">
+                <h1 className="text-white text-2xl font-bold">Sort & filter your transactions!</h1>
+                <div className="mb-4">
+                    <label className="text-white block mb-1">Filter by Merchant</label>
+                    <input
+                        type="text"
+                        className="w-full bg-gray-800 text-white px-3 py-1 rounded mb-2"
+                        placeholder="Type merchant name..."
+                        value={merchantQuery}
+                        onChange={(e) => setMerchantQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && merchantQuery.trim()) {
+                                if (!selectedMerchants.includes(merchantQuery.trim())) {
+                                    setSelectedMerchants([...selectedMerchants, merchantQuery.trim()]);
+                                }
+                                setMerchantQuery("");
+                            }
+                        }}
+                    />
+                    <div className="flex flex-wrap gap-2 mb-2">
+                        {selectedMerchants.map((merchant) => (
+                            <div key={merchant} className="bg-blue-600 text-white px-2 py-1 rounded flex items-center gap-2">
+                                <span>{merchant}</span>
+                                <button
+                                    className="text-xs"
+                                    onClick={() =>
+                                        setSelectedMerchants((prev) => prev.filter((m) => m !== merchant))
+                                    }
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <label className="text-white block mb-1">Sort Merchants</label>
+                    <select
+                        className="bg-gray-800 text-white px-3 py-1 rounded"
+                        value={merchantSort}
+                        onChange={(e) => setMerchantSort(e.target.value)}
+                    >
+                        <option value="">None</option>
+                        <option value="a-z">Name: A → Z</option>
+                        <option value="z-a">Name: Z → A</option>
+                        <option value="total-asc">Total: Low → High</option>
+                        <option value="total-desc">Total: High → Low</option>
+                        <option value="recent">Most Recent</option>
+                        <option value="oldest">Oldest</option>
+                        <option value="count-asc"># of Tx: Low → High</option>
+                        <option value="count-desc"># of Tx: High → Low</option>
+                    </select>
+                </div>
+
+                <div className="mb-4">
+                    <label className="text-white block mb-1">Filter by Category</label>
+                    <input
+                        type="text"
+                        className="w-full bg-gray-800 text-white px-3 py-1 rounded mb-1"
+                        placeholder="Type category name..."
+                        value={categoryQuery}
+                        onChange={(e) => setCategoryQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && categoryQuery.trim()) {
+                                const match = categorySuggestions[0] || categoryQuery.trim();
+                                if (!selectedCategories.includes(match)) {
+                                    setSelectedCategories([...selectedCategories, match]);
+                                }
+                                setCategoryQuery("");
+                            }
+                        }}
+                    />
+
+                    {/* Suggestions Dropdown */}
+                    {categoryQuery && categorySuggestions.length > 0 && (
+                        <div className="bg-gray-900 border border-gray-700 rounded mb-2 max-h-40 overflow-y-auto">
+                            {categorySuggestions.map((suggestion) => (
+                                <div
+                                    key={suggestion}
+                                    className="px-3 py-1 hover:bg-gray-700 cursor-pointer text-white"
+                                    onClick={() => {
+                                        setSelectedCategories([...selectedCategories, suggestion]);
+                                        setCategoryQuery("");
+                                    }}
+                                >
+                                    {suggestion}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 mb-2">
+                        {selectedCategories.map((category) => (
+                            <div key={category} className="bg-purple-600 text-white px-2 py-1 rounded flex items-center gap-2">
+                                <span>{category}</span>
+                                <button
+                                    className="text-xs"
+                                    onClick={() =>
+                                        setSelectedCategories((prev) => prev.filter((c) => c !== category))
+                                    }
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <label className="text-white block mb-1">Sort Categories</label>
+                    <select
+                        className="bg-gray-800 text-white px-3 py-1 rounded"
+                        value={categorySort}
+                        onChange={(e) => setCategorySort(e.target.value)}
+                    >
+                        <option value="">None</option>
+                        <option value="a-z">Name: A → Z</option>
+                        <option value="z-a">Name: Z → A</option>
+                        <option value="total-asc">Total: Low → High</option>
+                        <option value="total-desc">Total: High → Low</option>
+                        <option value="recent">Most Recent</option>
+                        <option value="oldest">Oldest</option>
+                        <option value="count-asc"># of Tx: Low → High</option>
+                        <option value="count-desc"># of Tx: High → Low</option>
+                    </select>
+                </div>
+
+
+
+                <div className="flex-col flex mt-4 bg-card rounded-2xl flex-1 h-auto mb-4">
+                    <div className="flex justify-between items-center mb-3">
+                        <p className="text-white ml-5 mt-6 text-med font-light">Transactions</p>
+                        <button
+                            onClick={() => setShowForm(true)}
+                            className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 mr-5 mt-6 rounded"
+                        >
+                            +
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (window.confirm("Are you sure you want to delete ALL filtered transactions?")) {
+                                    handleDeleteFiltered();
+                                }
+                            }}
+                            className="text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 mr-5 mt-6 rounded"
+                        >
+                            Delete All Displayed
+                        </button>
+                    </div>
+
+                    {showForm && (
+                        <AddTransaction
+                            setShowForm={setShowForm}
+                            formData={formData}
+                            setFormData={setFormData}
+                            transactions={transactions}
+                            setTransactions={setTransactions}
+                            incomeCategories={incomeCategories}
+                            expenseCategories={expenseCategories}
+                            userId={params.id}
+                        />
+                    )}
+
+                    {filteredTransactions.length === 0 ? (
+                        <p className="text-gray-400 text-xs ml-5 font-light">No transactions in this time period</p>
+                    ) : (
+                        <ul className="text-white text-sm flex-1 space-y-2 mr-5 ml-5 overflow-y-auto">
+                            {filteredTransactions.map((tx) => {
+                                const isIncome = parseFloat(tx.amount) > 0;
+                                const displayAmount = Math.abs(parseFloat(tx.amount)).toFixed(2);
+                                const amountColor = isIncome ? "text-green-400" : "text-red-400";
+
+                                return (
+                                    <li
+                                        key={tx.id}
+                                        className="flex justify-between items-start border-b border-gray-700 pb-2"
+                                    >
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{tx.merchant || "Unknown"}</span>
+                                            <span className="text-xs text-gray-400">
+                                                {tx.category || "Uncategorized"} • {formatDate(tx.transactionDate)}
+                                            </span>
+                                        </div>
+                                        <span className={`font-medium ${amountColor}`}>${displayAmount}</span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
