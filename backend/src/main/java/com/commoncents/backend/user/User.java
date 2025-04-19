@@ -1,11 +1,14 @@
 package com.commoncents.backend.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+
 
 @Entity
 @Table(name = "users")
@@ -18,6 +21,8 @@ public class User {
     private String lastName;
     private String email;
     private String phone;
+
+    @JsonIgnore
     private String password;
 
     public User() {

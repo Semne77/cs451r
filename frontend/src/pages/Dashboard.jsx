@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import TransactionChart from "@/components/TransactionChart";
 import AddTransaction from "../components/AddTransaction";
 import axios from "axios";
+import {useNavigate } from "react-router-dom";
 
 function EmptyFieldMessage({ field }) {
     return (
@@ -16,19 +17,51 @@ export default function Dashboard() {
 
     const params = useParams();
     const [firstName, setFirstName] = useState("");
+    const navigate = useNavigate();
+    const [unauthorized, setUnauthorized] = useState(false);
 
     useEffect(() => {
+        // Define an async function to fetch user data from the backend
         const fetchUser = async () => {
             try {
-                const res = await axios.get(`http://localhost:8080/users/${params.id}`);
+                // Make a GET request to fetch the user data using the ID from the URL (params.id)
+                // Also send a custom header "user-id" from localStorage for authorization checking
+                const res = await axios.get(`http://localhost:8080/users/${params.id}`, {
+                    headers: {
+                        "user-id": localStorage.getItem("userId")
+                    }
+                });
+    
+                // Save the user's first name to state so we can display it
                 setFirstName(res.data.firstName);
+    
+                // Log the full user data for debugging purposes
+                console.log("This is my data", res.data);
             } catch (err) {
+                // Log any error that happens during the request
                 console.error("Failed to fetch user:", err);
             }
         };
-
+    
+        // Call the function when the component mounts or when the URL param changes
         fetchUser();
-    }, [params.id]);
+    }, [params.id]); // 🔁 Re-run this effect if the URL parameter (user ID) changes
+    
+
+    // 🔁 useEffect to check if the logged-in user is allowed to view the dashboard
+    useEffect(() => {
+        // Get the currently logged-in user's ID from localStorage
+        const storedUserId = localStorage.getItem("userId");
+
+        // Compare the stored ID to the ID in the URL
+        if (storedUserId === params.id) {
+            // ✅ User is accessing their own dashboard — allow access
+            setUnauthorized(false); // Clear any previous "unauthorized" flag
+        } else {
+            // ❌ User is trying to access someone else's dashboard — block access
+            setUnauthorized(true);
+        }
+    }, [params.id]); // Re-run this check any time the URL changes
 
     const [transactions, setTransactions] = useState([]);
 
@@ -231,6 +264,33 @@ export default function Dashboard() {
         transactionDate: new Date().toISOString().split("T")[0],
         amount: ""
     });
+
+// 🔒 If the user is not authorized to view this page, show an Access Denied screen
+if (unauthorized) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen text-white">
+            {/* 🚫 Error title */}
+            <h1 className="text-3xl font-bold mb-4">🚫 Access Denied</h1>
+
+            {/* Brief explanation */}
+            <p className="text-lg">You are trying to view another user's dashboard.</p>
+
+            {/* Redirect button to take user to their own dashboard */}
+            <button
+                onClick={() => {
+                    // Get the logged-in user's ID from localStorage
+                    const userId = localStorage.getItem("userId");
+
+                    // Navigate to the correct dashboard
+                    navigate(`/dashboard/${userId}`);
+                }}
+                className="mt-6 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded"
+            >
+                Go to My Dashboard
+            </button>
+        </div>
+    );
+}
 
 
 
