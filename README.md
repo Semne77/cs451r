@@ -1,11 +1,14 @@
-# cs451r
-Capstone class
+# CommonCents
 
-Front End
-* Sign-up /Acount Regestry Page
-* Reset password page
-* Data Visualization
-* User Profile
-  * Phone #
-  * Email Address
-  * Acount Recovery
+## Backend
+
+## Frontend
+* Login Page
+* Sign Up Page
+* Dashboard Page
+* Transactions Page
+* Goals Page
+* Categories Page
+* Settings Page
+
+## Database
