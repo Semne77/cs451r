@@ -22,6 +22,15 @@ export default function Transactions() {
             try {
                 const res = await axios.get(`http://localhost:8080/transactions/${params.id}`);
                 setTransactions(res.data);
+
+                // Auto-set date range
+                const dates = res.data.map((tx) => new Date(tx.transactionDate));
+                if (dates.length > 0) {
+                    const minDate = new Date(Math.min(...dates));
+                    const maxDate = new Date(Math.max(...dates));
+                    setDateMin(minDate);
+                    setDateMax(maxDate);
+                }
             } catch (err) {
                 console.error("Failed to fetch transactions:", err);
             }
@@ -40,6 +49,8 @@ export default function Transactions() {
 
     const [dateMin, setDateMin] = useState(null);
     const [dateMax, setDateMax] = useState(null);
+    const [dateSort, setDateSort] = useState(""); // "recent", "oldest", or ""
+
 
     const [amountMin, setAmountMin] = useState(null);
     const [amountMax, setAmountMax] = useState(null);
@@ -66,30 +77,53 @@ export default function Transactions() {
         const merchantGroup = groupBy(txs, (tx) => tx.merchant || "Unknown");
         const categoryGroup = groupBy(txs, (tx) => tx.category || "Uncategorized");
 
-        const sortBy = {
-            "a-z": (a, b) => a.category.localeCompare(b.category),
-            "z-a": (a, b) => b.category.localeCompare(a.category),
-            "total-asc": (a, b) =>
-                categoryGroup[a.category]?.total - categoryGroup[b.category]?.total,
-            "total-desc": (a, b) =>
-                categoryGroup[b.category]?.total - categoryGroup[a.category]?.total,
-            "recent": (a, b) =>
-                new Date(categoryGroup[b.category]?.recent) -
-                new Date(categoryGroup[a.category]?.recent),
-            "oldest": (a, b) =>
-                new Date(categoryGroup[a.category]?.oldest) -
-                new Date(categoryGroup[b.category]?.oldest),
-            "count-asc": (a, b) =>
-                categoryGroup[a.category]?.count - categoryGroup[b.category]?.count,
-            "count-desc": (a, b) =>
-                categoryGroup[b.category]?.count - categoryGroup[a.category]?.count,
-        };
+        return [...txs].sort((a, b) => {
+            // 1. Sort by Date
+            if (dateSort === "date-new-old") {
+                return new Date(b.transactionDate) - new Date(a.transactionDate);
+            }
+            if (dateSort === "date-old-new") {
+                return new Date(a.transactionDate) - new Date(b.transactionDate);
+            }
 
-        const sortKey =
-            merchantSort || categorySort; // prefer merchant if both selected
+            // 2. Sort by Merchant
+            if (merchantSort) {
+                const mA = a.merchant || "Unknown";
+                const mB = b.merchant || "Unknown";
 
-        return sortKey ? txs.sort(sortBy[sortKey]) : txs;
+                switch (merchantSort) {
+                    case "a-z": return mA.localeCompare(mB);
+                    case "z-a": return mB.localeCompare(mA);
+                    case "total-asc": return merchantGroup[mA].total - merchantGroup[mB].total;
+                    case "total-desc": return merchantGroup[mB].total - merchantGroup[mA].total;
+                    case "recent": return new Date(merchantGroup[mB].recent) - new Date(merchantGroup[mA].recent);
+                    case "oldest": return new Date(merchantGroup[mA].oldest) - new Date(merchantGroup[mB].oldest);
+                    case "count-asc": return merchantGroup[mA].count - merchantGroup[mB].count;
+                    case "count-desc": return merchantGroup[mB].count - merchantGroup[mA].count;
+                }
+            }
+
+            // 3. Sort by Category
+            if (categorySort) {
+                const cA = a.category || "Uncategorized";
+                const cB = b.category || "Uncategorized";
+
+                switch (categorySort) {
+                    case "a-z": return cA.localeCompare(cB);
+                    case "z-a": return cB.localeCompare(cA);
+                    case "total-asc": return categoryGroup[cA].total - categoryGroup[cB].total;
+                    case "total-desc": return categoryGroup[cB].total - categoryGroup[cA].total;
+                    case "recent": return new Date(categoryGroup[cB].recent) - new Date(categoryGroup[cA].recent);
+                    case "oldest": return new Date(categoryGroup[cA].oldest) - new Date(categoryGroup[cB].oldest);
+                    case "count-asc": return categoryGroup[cA].count - categoryGroup[cB].count;
+                    case "count-desc": return categoryGroup[cB].count - categoryGroup[cA].count;
+                }
+            }
+
+            return 0; // default fallback
+        });
     };
+
 
 
     const getFilteredTransactions = () => {
@@ -170,6 +204,13 @@ export default function Transactions() {
         !selectedCategories.includes(cat)
     );
 
+    const merchantSuggestions = Array.from(new Set(
+        transactions
+            .map((t) => t.merchant?.trim())
+            .filter((m) => m && m.toLowerCase().includes(merchantQuery.toLowerCase()) && !selectedMerchants.includes(m))
+    ));
+
+
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState({
         type: "Expense",
@@ -218,6 +259,22 @@ export default function Transactions() {
                             }
                         }}
                     />
+                    {merchantQuery && merchantSuggestions.length > 0 && (
+                        <div className="bg-gray-900 border border-gray-700 rounded mb-2 max-h-40 overflow-y-auto">
+                            {merchantSuggestions.map((suggestion) => (
+                                <div
+                                    key={suggestion}
+                                    className="px-3 py-1 hover:bg-gray-700 cursor-pointer text-white"
+                                    onClick={() => {
+                                        setSelectedMerchants([...selectedMerchants, suggestion]);
+                                        setMerchantQuery("");
+                                    }}
+                                >
+                                    {suggestion}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <div className="flex flex-wrap gap-2 mb-2">
                         {selectedMerchants.map((merchant) => (
                             <div key={merchant} className="bg-blue-600 text-white px-2 py-1 rounded flex items-center gap-2">
@@ -270,8 +327,6 @@ export default function Transactions() {
                             }
                         }}
                     />
-
-                    {/* Suggestions Dropdown */}
                     {categoryQuery && categorySuggestions.length > 0 && (
                         <div className="bg-gray-900 border border-gray-700 rounded mb-2 max-h-40 overflow-y-auto">
                             {categorySuggestions.map((suggestion) => (
@@ -321,6 +376,37 @@ export default function Transactions() {
                         <option value="count-desc"># of Tx: High → Low</option>
                     </select>
                 </div>
+
+                <div className="mb-4">
+                    <label className="text-white block mb-1">Filter by Transaction Date</label>
+                    <div className="flex gap-2 items-center mb-2">
+                        <input
+                            type="date"
+                            value={dateMin ? dateMin.toISOString().split("T")[0] : ""}
+                            onChange={(e) => setDateMin(new Date(e.target.value))}
+                            className="bg-gray-800 text-white px-3 py-1 rounded"
+                        />
+                        <span className="text-white">to</span>
+                        <input
+                            type="date"
+                            value={dateMax ? dateMax.toISOString().split("T")[0] : ""}
+                            onChange={(e) => setDateMax(new Date(e.target.value))}
+                            className="bg-gray-800 text-white px-3 py-1 rounded"
+                        />
+                    </div>
+
+                    <label className="text-white block mb-1">Sort by Transaction Date</label>
+                    <select
+                        className="bg-gray-800 text-white px-3 py-1 rounded"
+                        value={dateSort}
+                        onChange={(e) => setDateSort(e.target.value)}
+                    >
+                        <option value="">None</option>
+                        <option value="recent">Newest → Oldest</option>
+                        <option value="oldest">Oldest → Newest</option>
+                    </select>
+                </div>
+
 
 
 

@@ -1,5 +1,10 @@
 package com.commoncents.backend.user;
 
+<<<<<<< Updated upstream
+=======
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+>>>>>>> Stashed changes
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +38,17 @@ public class UserController {
     @PostMapping(path = "/getUser")
     public User getUser(@RequestBody User request) {
         User user = userService.getUser(request.getEmail());
+<<<<<<< Updated upstream
         if (user == null || !request.getPassword().equals(user.getPassword())) {
+=======
+
+        String pas = "";
+        if (request.getPassword() != null) {
+            pas = hashPassword(request.getPassword());
+        }
+
+        if (user == null || !pas.equals(user.getPassword())) {
+>>>>>>> Stashed changes
             user = new User();
         }
         return user;
@@ -56,4 +71,42 @@ public class UserController {
         return userService.updateUser(id, updatedData);
     }
 
+<<<<<<< Updated upstream
+=======
+
+    private int getUserIdFromSessionOrToken(HttpServletRequest request) {
+        String userIdHeader = request.getHeader("user-id");
+        return Integer.parseInt(userIdHeader);
+    }
+
+
+    //  Utility method to hash a password using SHA-256
+    public static String hashPassword(String password) {
+        try {
+            //  Create a MessageDigest instance using SHA-256 algorithm
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+            //  Convert the password string into a byte array and compute the hash
+            byte[] hashedBytes = md.digest(password.getBytes());
+
+            //  Convert the byte array into a readable hexadecimal string
+            StringBuilder stringBuilder = new StringBuilder();
+            for (byte b : hashedBytes) {
+                // Format each byte as a two-character hex string and append
+                stringBuilder.append(String.format("%02x", b));
+            }
+
+            //  Return the final hex string (the hashed password)
+
+            // System.out.println("Hashed pass: " + stringBuilder.toString());
+            return stringBuilder.toString();
+
+        } catch (NoSuchAlgorithmException e) {
+            //  If SHA-256 is not supported (very rare), print the error and return null
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+>>>>>>> Stashed changes
 }
