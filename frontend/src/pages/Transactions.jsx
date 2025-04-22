@@ -54,6 +54,7 @@ export default function Transactions() {
 
     const [amountMin, setAmountMin] = useState(null);
     const [amountMax, setAmountMax] = useState(null);
+    const [amountSort, setAmountSort] = useState("");
 
     const sortTransactions = (txs) => {
         const groupBy = (txs, keyFn) =>
@@ -78,15 +79,18 @@ export default function Transactions() {
         const categoryGroup = groupBy(txs, (tx) => tx.category || "Uncategorized");
 
         return [...txs].sort((a, b) => {
-            // 1. Sort by Date
-            if (dateSort === "date-new-old") {
-                return new Date(b.transactionDate) - new Date(a.transactionDate);
-            }
-            if (dateSort === "date-old-new") {
-                return new Date(a.transactionDate) - new Date(b.transactionDate);
-            }
+            const aAmt = Math.abs(parseFloat(a.amount));
+            const bAmt = Math.abs(parseFloat(b.amount));
 
-            // 2. Sort by Merchant
+            // 1. Amount Sort
+            if (amountSort === "amount-asc") return aAmt - bAmt;
+            if (amountSort === "amount-desc") return bAmt - aAmt;
+
+            // 2. Date Sort
+            if (dateSort === "date-new-old") return new Date(b.transactionDate) - new Date(a.transactionDate);
+            if (dateSort === "date-old-new") return new Date(a.transactionDate) - new Date(b.transactionDate);
+
+            // 3. Merchant Sort
             if (merchantSort) {
                 const mA = a.merchant || "Unknown";
                 const mB = b.merchant || "Unknown";
@@ -103,7 +107,7 @@ export default function Transactions() {
                 }
             }
 
-            // 3. Sort by Category
+            // 4. Category Sort
             if (categorySort) {
                 const cA = a.category || "Uncategorized";
                 const cB = b.category || "Uncategorized";
@@ -120,9 +124,10 @@ export default function Transactions() {
                 }
             }
 
-            return 0; // default fallback
+            return 0;
         });
     };
+
 
 
 
@@ -295,7 +300,12 @@ export default function Transactions() {
                     <select
                         className="bg-gray-800 text-white px-3 py-1 rounded"
                         value={merchantSort}
-                        onChange={(e) => setMerchantSort(e.target.value)}
+                        onChange={(e) => {
+                            setMerchantSort(e.target.value);
+                            setCategorySort("");
+                            setDateSort("");
+                            setAmountSort("");
+                        }}
                     >
                         <option value="">None</option>
                         <option value="a-z">Name: A → Z</option>
@@ -363,7 +373,12 @@ export default function Transactions() {
                     <select
                         className="bg-gray-800 text-white px-3 py-1 rounded"
                         value={categorySort}
-                        onChange={(e) => setCategorySort(e.target.value)}
+                        onChange={(e) => {
+                            setCategorySort(e.target.value);
+                            setDateSort("");
+                            setAmountSort("");
+                            setMerchantSort("");
+                        }}
                     >
                         <option value="">None</option>
                         <option value="a-z">Name: A → Z</option>
@@ -399,7 +414,12 @@ export default function Transactions() {
                     <select
                         className="bg-gray-800 text-white px-3 py-1 rounded"
                         value={dateSort}
-                        onChange={(e) => setDateSort(e.target.value)}
+                        onChange={(e) => {
+                            setDateSort(e.target.value);
+                            setAmountSort("");
+                            setMerchantSort("");
+                            setCategorySort("");
+                        }}
                     >
                         <option value="">None</option>
                         <option value="recent">Newest → Oldest</option>
@@ -407,7 +427,49 @@ export default function Transactions() {
                     </select>
                 </div>
 
+                <div className="mb-4">
+                    <label className="text-white block mb-1">Filter by Amount</label>
+                    <div className="flex gap-2 items-center mb-2">
+                        <input
+                            type="number"
+                            placeholder="Min"
+                            value={amountMin ?? ""}
+                            onChange={(e) =>
+                                setAmountMin(e.target.value ? parseFloat(e.target.value) : null)
+                            }
+                            className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
+                        />
+                        <span className="text-white">to</span>
+                        <input
+                            type="number"
+                            placeholder="Max"
+                            value={amountMax ?? ""}
+                            onChange={(e) =>
+                                setAmountMax(e.target.value ? parseFloat(e.target.value) : null)
+                            }
+                            className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
+                        />
+                    </div>
+                </div>
 
+
+                <div className="mb-4">
+                    <label className="text-white block mb-1">Sort by Amount</label>
+                    <select
+                        className="bg-gray-800 text-white px-3 py-1 rounded"
+                        value={amountSort}
+                        onChange={(e) => {
+                            setAmountSort(e.target.value);
+                            setDateSort("");
+                            setMerchantSort("");
+                            setCategorySort("");
+                        }}
+                    >
+                        <option value="">None</option>
+                        <option value="amount-asc">Amount: Low → High</option>
+                        <option value="amount-desc">Amount: High → Low</option>
+                    </select>
+                </div>
 
 
                 <div className="flex-col flex mt-4 bg-card rounded-2xl flex-1 h-auto mb-4">

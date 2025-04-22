@@ -42,9 +42,7 @@ CommonCents
 - Add goals table
 
 ## Security
-- Hash passwords (use SHA-2 or SHA-3)
 - Prevent SQL injection
-- Disallow changing "1 -> 8" in URL to change account
 
 ## Testing
 - Figure out how testing works
@@ -79,9 +77,6 @@ Dashboard Page
 - Add goals card
 
 Transactions Page
-- Fix merchant filtering auto-complete
-- Add transaction date sort/filter
-- Add amount sort/filter
 - Add recurring filter
 - Add active filter
 - Clean format

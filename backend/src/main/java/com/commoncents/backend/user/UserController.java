@@ -1,10 +1,7 @@
 package com.commoncents.backend.user;
 
-<<<<<<< Updated upstream
-=======
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
->>>>>>> Stashed changes
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +13,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 
 @RestController
@@ -38,9 +37,6 @@ public class UserController {
     @PostMapping(path = "/getUser")
     public User getUser(@RequestBody User request) {
         User user = userService.getUser(request.getEmail());
-<<<<<<< Updated upstream
-        if (user == null || !request.getPassword().equals(user.getPassword())) {
-=======
 
         String pas = "";
         if (request.getPassword() != null) {
@@ -48,7 +44,6 @@ public class UserController {
         }
 
         if (user == null || !pas.equals(user.getPassword())) {
->>>>>>> Stashed changes
             user = new User();
         }
         return user;
@@ -71,8 +66,6 @@ public class UserController {
         return userService.updateUser(id, updatedData);
     }
 
-<<<<<<< Updated upstream
-=======
 
     private int getUserIdFromSessionOrToken(HttpServletRequest request) {
         String userIdHeader = request.getHeader("user-id");
@@ -108,5 +101,4 @@ public class UserController {
         }
     }
 
->>>>>>> Stashed changes
 }
