@@ -1,82 +1,120 @@
-import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
-import axios from "axios";
-import Sidebar from "@/components/Sidebar";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import Sidebar from '../components/Sidebar';
 
-const Settings = () => {
-    const params = useParams();
-    const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        password: ""
+function SettingsPage() {
+    const [userData, setUserData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        password: '',
     });
 
-    const [message, setMessage] = useState("");
-
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchData = async () => {
             try {
-                const res = await axios.get(`http://localhost:8080/users/${params.id}`);
-                setFormData({
-                    firstName: res.data.firstName || "",
-                    lastName: res.data.lastName || "",
-                    email: res.data.email || "",
-                    phone: res.data.phone || "",
-                    password: "" // don't prefill passwords
-                });
-            } catch (err) {
-                console.error("Failed to fetch user info:", err);
+                const userId = window.location.pathname.split('/').pop();
+                const response = await axios.get(`http://localhost:8080/users/${userId}`);
+                setUserData(response.data);
+            } catch (error) {
+                console.error('Error fetching user data', error);
             }
         };
 
-        fetchUser();
-    }, [params.id]);
+        fetchData();
+    }, []);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleChange = (e) => {
+        setUserData({ ...userData, [e.target.name]: e.target.value });
+    };
+
+    const handleSave = async () => {
         try {
-            await axios.put(`http://localhost:8080/users/update/${params.id}`, formData);
-            setMessage("Settings updated successfully!");
-        } catch (err) {
-            console.error("Failed to update settings:", err);
-            setMessage("Something went wrong.");
+            const userId = window.location.pathname.split('/').pop();
+            await axios.put(`http://localhost:8080/users/${userId}`, userData);
+            alert('Changes saved successfully!');
+        } catch (error) {
+            console.error('Error saving changes', error);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        try {
+            const userId = window.location.pathname.split('/').pop();
+            await axios.delete(`http://localhost:8080/users/delete/${userId}`);
+            alert('Account deleted successfully!');
+            window.location.href = '/'; // Redirect after deletion
+        } catch (error) {
+            console.error('Error deleting account', error);
         }
     };
 
     return (
         <div className="flex">
             <Sidebar />
-            <div className="p-8 text-white max-w-md mx-auto">
-                <h2 className="text-2xl font-bold mb-6">Settings</h2>
+            <div className="flex flex-col p-8 w-full">
+                <h1 className="text-2xl font-bold mb-6 text-white">Settings</h1>
 
-                {message && <p className="mb-4 text-sm text-green-400">{message}</p>}
+                <input
+                    className="w-full p-2 mb-4 rounded bg-gray-800 text-white"
+                    type="text"
+                    name="firstName"
+                    value={userData.firstName}
+                    onChange={handleChange}
+                    placeholder="First Name"
+                />
+                <input
+                    className="w-full p-2 mb-4 rounded bg-gray-800 text-white"
+                    type="text"
+                    name="lastName"
+                    value={userData.lastName}
+                    onChange={handleChange}
+                    placeholder="Last Name"
+                />
+                <input
+                    className="w-full p-2 mb-4 rounded bg-gray-800 text-white"
+                    type="email"
+                    name="email"
+                    value={userData.email}
+                    onChange={handleChange}
+                    placeholder="Email"
+                />
+                <input
+                    className="w-full p-2 mb-4 rounded bg-gray-800 text-white"
+                    type="text"
+                    name="phone"
+                    value={userData.phone}
+                    onChange={handleChange}
+                    placeholder="Phone"
+                />
+                <input
+                    className="w-full p-2 mb-6 rounded bg-gray-800 text-white"
+                    type="password"
+                    name="password"
+                    value={userData.password}
+                    onChange={handleChange}
+                    placeholder="Password"
+                />
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {["firstName", "lastName", "email", "phone", "password"].map((field) => (
-                        <div key={field}>
-                            <label className="block text-sm capitalize mb-1">{field}</label>
-                            <input
-                                type={field === "password" ? "password" : "text"}
-                                value={formData[field]}
-                                onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                                className="w-full p-2 rounded text-white bg-gray-800"
-                                required={field !== "phone"}
-                            />
-                        </div>
-                    ))}
-
+                <div className="flex space-x-4">
                     <button
-                        type="submit"
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                        onClick={handleSave}
+                        className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
                         Save Changes
                     </button>
-                </form>
+
+                    <button
+                        onClick={handleDeleteAccount}
+                        className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                    >
+                        Delete My Account
+                    </button>
+                </div>
             </div>
         </div>
     );
-};
+}
 
-export default Settings;
+export default SettingsPage;

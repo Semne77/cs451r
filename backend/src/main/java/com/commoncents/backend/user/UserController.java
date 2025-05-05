@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-
 @RestController
 @RequestMapping(path = "/users")
 @CrossOrigin(origins = "http://localhost:5173")
@@ -66,36 +65,34 @@ public class UserController {
         return userService.updateUser(id, updatedData);
     }
 
-
     private int getUserIdFromSessionOrToken(HttpServletRequest request) {
         String userIdHeader = request.getHeader("user-id");
         return Integer.parseInt(userIdHeader);
     }
 
-
-    //  Utility method to hash a password using SHA-256
+    // Utility method to hash a password using SHA-256
     public static String hashPassword(String password) {
         try {
-            //  Create a MessageDigest instance using SHA-256 algorithm
+            // Create a MessageDigest instance using SHA-256 algorithm
             MessageDigest md = MessageDigest.getInstance("SHA-256");
 
-            //  Convert the password string into a byte array and compute the hash
+            // Convert the password string into a byte array and compute the hash
             byte[] hashedBytes = md.digest(password.getBytes());
 
-            //  Convert the byte array into a readable hexadecimal string
+            // Convert the byte array into a readable hexadecimal string
             StringBuilder stringBuilder = new StringBuilder();
             for (byte b : hashedBytes) {
                 // Format each byte as a two-character hex string and append
                 stringBuilder.append(String.format("%02x", b));
             }
 
-            //  Return the final hex string (the hashed password)
+            // Return the final hex string (the hashed password)
 
             // System.out.println("Hashed pass: " + stringBuilder.toString());
             return stringBuilder.toString();
 
         } catch (NoSuchAlgorithmException e) {
-            //  If SHA-256 is not supported (very rare), print the error and return null
+            // If SHA-256 is not supported (very rare), print the error and return null
             e.printStackTrace();
             return null;
         }
