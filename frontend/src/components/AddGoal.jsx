@@ -1,23 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const AddGoal = ({
-  setShowForm,
-  goals,
-  setGoals,
-  userId,
-}) => {
+const allCategories = [
+  "Wages", "Freelance", "Investments", "Gifts", "Refunds", "Credits", "Other Income",
+  "Rent", "Mortgage", "Maintenance", "Utilities", "Restaurants", "Supermarkets", "Gasoline", "Transit", "Parking",
+  "Insurance", "Medical Bills", "Merchandise", "Services", "Clothing", "Education", "Entertainment", "Donations",
+  "Payments", "Travels", "Taxes", "Other Expenses"
+];
+
+const AddGoal = ({ setShowForm, goals, setGoals, userId }) => {
+  const today = new Date();
   const [formData, setFormData] = useState({
     goalType: "",
     category: "",
     targetAmount: "",
-    period: "",
-    startDate: new Date().toISOString().split("T")[0],
-    endDate: "",
+    period: "week",
+    startDate: today.toISOString().split("T")[0],
+    endDate: "", // Will be calculated
   });
+
+  // Update endDate when period changes
+  useEffect(() => {
+    const end = new Date(today);
+    switch (formData.period) {
+      case "week":
+        end.setDate(end.getDate() + 7);
+        break;
+      case "month":
+        end.setMonth(end.getMonth() + 1);
+        break;
+      case "year":
+        end.setFullYear(end.getFullYear() + 1);
+        break;
+      default:
+        break;
+    }
+    setFormData((prev) => ({ ...prev, endDate: end.toISOString().split("T")[0] }));
+  }, [formData.period]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const newGoal = {
       userId: parseInt(userId),
       goalType: formData.goalType,
@@ -29,7 +52,7 @@ const AddGoal = ({
     };
 
     try {
-      const res = await axios.post("http://localhost:8080/goals/add", newGoal);
+      const res = await axios.post("http://localhost:8080/api/goals", newGoal);
       setGoals([...goals, res.data]);
       setShowForm(false);
     } catch (err) {
@@ -61,13 +84,17 @@ const AddGoal = ({
 
           <div>
             <label className="block text-sm">Category</label>
-            <input
-              type="text"
+            <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               className="w-full p-1 text-white rounded bg-gray-800"
               required
-            />
+            >
+              <option value="" disabled>Select a category</option>
+              {allCategories.map((cat, i) => (
+                <option key={i} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -83,38 +110,24 @@ const AddGoal = ({
 
           <div>
             <label className="block text-sm">Period</label>
-            <input
-              type="text"
+            <select
               value={formData.period}
               onChange={(e) => setFormData({ ...formData, period: e.target.value })}
               className="w-full p-1 text-white rounded bg-gray-800"
               required
-            />
+            >
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
           </div>
 
-          <div>
-            <label className="block text-sm">Start Date</label>
-            <input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              className="w-full p-1 text-white rounded bg-gray-800"
-              required
-            />
+          <div className="text-sm text-gray-400">
+            Start Date: <span className="text-white">{formData.startDate}</span><br />
+            End Date: <span className="text-white">{formData.endDate}</span>
           </div>
 
-          <div>
-            <label className="block text-sm">End Date</label>
-            <input
-              type="date"
-              value={formData.endDate}
-              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-              className="w-full p-1 text-white rounded bg-gray-800"
-              required
-            />
-          </div>
-
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-4 mt-4">
             <button
               type="button"
               onClick={() => setShowForm(false)}
