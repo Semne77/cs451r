@@ -346,133 +346,136 @@ export default function Transactions() {
                         ))}
                     </div>
                 </div>
-                <div className="mb-4">
-                    <label className="text-white block mb-1">Filter by Transaction Date</label>
-                    <div className="flex gap-2 items-center mb-2">
-                        <input
-                            type="date"
-                            value={dateMin ? dateMin.toISOString().split("T")[0] : ""}
-                            onChange={(e) => setDateMin(new Date(e.target.value))}
-                            className="bg-gray-800 text-white px-3 py-1 rounded"
-                        />
-                        <span className="text-white">to</span>
-                        <input
-                            type="date"
-                            value={dateMax ? dateMax.toISOString().split("T")[0] : ""}
-                            onChange={(e) => setDateMax(new Date(e.target.value))}
-                            className="bg-gray-800 text-white px-3 py-1 rounded"
-                        />
+                <div className="flex flex-wrap gap-x-4 mb-4">
+                    <div className="basis-[calc(50%-1rem)]">
+                        <label className="text-white block mb-1">Filter by Transaction Date</label>
+                        <div className="flex gap-2 items-center mb-2">
+                            <input
+                                type="date"
+                                value={dateMin ? dateMin.toISOString().split("T")[0] : ""}
+                                onChange={(e) => setDateMin(new Date(e.target.value))}
+                                className="bg-gray-800 text-white px-3 py-1 w-1/2 rounded"
+                            />
+                            <span className="text-white">to</span>
+                            <input
+                                type="date"
+                                value={dateMax ? dateMax.toISOString().split("T")[0] : ""}
+                                onChange={(e) => setDateMax(new Date(e.target.value))}
+                                className="bg-gray-800 text-white px-3 py-1 w-1/2 rounded"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="basis-[calc(50%-1rem)]">
+                        <label className="text-white block mb-1">Filter by Amount</label>
+                        <div className="flex gap-2 items-center mb-2">
+                            <input
+                                type="number"
+                                placeholder="Min"
+                                value={amountMin ?? ""}
+                                onChange={(e) =>
+                                    setAmountMin(e.target.value ? parseFloat(e.target.value) : null)
+                                }
+                                className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
+                            />
+                            <span className="text-white">to</span>
+                            <input
+                                type="number"
+                                placeholder="Max"
+                                value={amountMax ?? ""}
+                                onChange={(e) =>
+                                    setAmountMax(e.target.value ? parseFloat(e.target.value) : null)
+                                }
+                                className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <div className="mb-4">
-                    <label className="text-white block mb-1">Filter by Amount</label>
-                    <div className="flex gap-2 items-center mb-2">
-                        <input
-                            type="number"
-                            placeholder="Min"
-                            value={amountMin ?? ""}
-                            onChange={(e) =>
-                                setAmountMin(e.target.value ? parseFloat(e.target.value) : null)
-                            }
-                            className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
-                        />
-                        <span className="text-white">to</span>
-                        <input
-                            type="number"
-                            placeholder="Max"
-                            value={amountMax ?? ""}
-                            onChange={(e) =>
-                                setAmountMax(e.target.value ? parseFloat(e.target.value) : null)
-                            }
-                            className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
-                        />
+                <div className="flex flex-wrap gap-x-4 mb-4">
+                    <div className="basis-[calc(25%-1rem)]">
+                        <label className="text-white block mb-1">Sort Merchants</label>
+                        <select
+                            className="bg-gray-800 text-white px-3 py-1 w-full rounded"
+                            value={merchantSort}
+                            onChange={(e) => {
+                                setMerchantSort(e.target.value);
+                                setCategorySort("");
+                                setDateSort("");
+                                setAmountSort("");
+                            }}
+                        >
+                            <option value="">None</option>
+                            <option value="a-z">Name: A → Z</option>
+                            <option value="z-a">Name: Z → A</option>
+                            <option value="total-asc">Total: Low → High</option>
+                            <option value="total-desc">Total: High → Low</option>
+                            <option value="recent">Most Recent</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="count-asc"># of Tx: Low → High</option>
+                            <option value="count-desc"># of Tx: High → Low</option>
+                        </select>
                     </div>
-                </div>
 
+                    <div className="basis-[calc(25%-1rem)]">
+                        <label className="text-white block mb-1">Sort Categories</label>
+                        <select
+                            className="bg-gray-800 text-white px-3 py-1 w-full rounded"
+                            value={categorySort}
+                            onChange={(e) => {
+                                setCategorySort(e.target.value);
+                                setDateSort("");
+                                setAmountSort("");
+                                setMerchantSort("");
+                            }}
+                        >
+                            <option value="">None</option>
+                            <option value="a-z">Name: A → Z</option>
+                            <option value="z-a">Name: Z → A</option>
+                            <option value="total-asc">Total: Low → High</option>
+                            <option value="total-desc">Total: High → Low</option>
+                            <option value="recent">Most Recent</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="count-asc"># of Tx: Low → High</option>
+                            <option value="count-desc"># of Tx: High → Low</option>
+                        </select>
+                    </div>
 
-                <div className="mb-4 inline-block">
-                    <label className="text-white block mb-1">Sort Merchants</label>
-                    <select
-                        className="bg-gray-800 text-white px-3 py-1 rounded"
-                        value={merchantSort}
-                        onChange={(e) => {
-                            setMerchantSort(e.target.value);
-                            setCategorySort("");
-                            setDateSort("");
-                            setAmountSort("");
-                        }}
-                    >
-                        <option value="">None</option>
-                        <option value="a-z">Name: A → Z</option>
-                        <option value="z-a">Name: Z → A</option>
-                        <option value="total-asc">Total: Low → High</option>
-                        <option value="total-desc">Total: High → Low</option>
-                        <option value="recent">Most Recent</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="count-asc"># of Tx: Low → High</option>
-                        <option value="count-desc"># of Tx: High → Low</option>
-                    </select>
-                </div>
+                    <div className="basis-[calc(25%-1rem)]">
+                        <label className="text-white block mb-1">Sort by Transaction Date</label>
+                        <select
+                            className="bg-gray-800 text-white px-3 py-1 w-full rounded"
+                            value={dateSort}
+                            onChange={(e) => {
+                                setDateSort(e.target.value);
+                                setAmountSort("");
+                                setMerchantSort("");
+                                setCategorySort("");
+                            }}
+                        >
+                            <option value="">None</option>
+                            <option value="recent">Newest → Oldest</option>
+                            <option value="oldest">Oldest → Newest</option>
+                        </select>
+                    </div>
 
-                <div className="mb-4 inline-block">
-                    <label className="text-white block mb-1">Sort Categories</label>
-                    <select
-                        className="bg-gray-800 text-white px-3 py-1 rounded"
-                        value={categorySort}
-                        onChange={(e) => {
-                            setCategorySort(e.target.value);
-                            setDateSort("");
-                            setAmountSort("");
-                            setMerchantSort("");
-                        }}
-                    >
-                        <option value="">None</option>
-                        <option value="a-z">Name: A → Z</option>
-                        <option value="z-a">Name: Z → A</option>
-                        <option value="total-asc">Total: Low → High</option>
-                        <option value="total-desc">Total: High → Low</option>
-                        <option value="recent">Most Recent</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="count-asc"># of Tx: Low → High</option>
-                        <option value="count-desc"># of Tx: High → Low</option>
-                    </select>
-                </div>
-
-                <div className="mb-4 inline-block">
-                    <label className="text-white block mb-1">Sort by Transaction Date</label>
-                    <select
-                        className="bg-gray-800 text-white px-3 py-1 rounded"
-                        value={dateSort}
-                        onChange={(e) => {
-                            setDateSort(e.target.value);
-                            setAmountSort("");
-                            setMerchantSort("");
-                            setCategorySort("");
-                        }}
-                    >
-                        <option value="">None</option>
-                        <option value="recent">Newest → Oldest</option>
-                        <option value="oldest">Oldest → Newest</option>
-                    </select>
-                </div>
-
-                <div className="mb-4 inline-block">
-                    <label className="text-white block mb-1">Sort by Amount</label>
-                    <select
-                        className="bg-gray-800 text-white px-3 py-1 rounded"
-                        value={amountSort}
-                        onChange={(e) => {
-                            setAmountSort(e.target.value);
-                            setDateSort("");
-                            setMerchantSort("");
-                            setCategorySort("");
-                        }}
-                    >
-                        <option value="">None</option>
-                        <option value="amount-asc">Amount: Low → High</option>
-                        <option value="amount-desc">Amount: High → Low</option>
-                    </select>
+                    <div className="basis-[calc(25%-1rem)]">
+                        <label className="text-white block mb-1">Sort by Amount</label>
+                        <select
+                            className="bg-gray-800 text-white px-3 py-1 w-full rounded"
+                            value={amountSort}
+                            onChange={(e) => {
+                                setAmountSort(e.target.value);
+                                setDateSort("");
+                                setMerchantSort("");
+                                setCategorySort("");
+                            }}
+                        >
+                            <option value="">None</option>
+                            <option value="amount-asc">Amount: Low → High</option>
+                            <option value="amount-desc">Amount: High → Low</option>
+                        </select>
+                    </div>
                 </div>
 
 
