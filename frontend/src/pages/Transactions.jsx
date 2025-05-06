@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, } from "@/components/ui/card";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, Square, CheckSquare, MinusSquare } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AddTransaction from "../components/AddTransaction";
 import axios from "axios";
@@ -226,16 +226,38 @@ export default function Transactions() {
         amount: ""
     });
 
+    const [selectedTransactions, setSelectedTransactions] = useState([])
+    const toggleAll = () => {
+        const allIds = filteredTransactions.map(tx => tx.id);
+        const isSomeSelected = selectedTransactions.length != 0;
+        setSelectedTransactions(isSomeSelected ? [] : allIds);
+    };
+
+    const getMasterIcon = () => {
+        const selectedCount = selectedTransactions.length;
+        const total = filteredTransactions.length;
+
+        if (selectedCount === 0) return <Square onClick={toggleAll} className="cursor-pointer" />;
+        if (selectedCount === total) return <CheckSquare onClick={toggleAll} className="cursor-pointer" />;
+        return <MinusSquare onClick={toggleAll} className="cursor-pointer" />;
+    };
+
+    const toggleTransaction = (id) => {
+        setSelectedTransactions((prev) =>
+            prev.includes(id) ? prev.filter(txId => txId !== id) : [...prev, id]
+        );
+    };
+
+
+
     const handleDeleteFiltered = async () => {
-        const idsToDelete = filteredTransactions.map((tx) => tx.id);
+        const idsToDelete = selectedTransactions;
 
         try {
             console.log("Deleting transactions: " + idsToDelete);
             await axios.post("http://localhost:8080/transactions/deleteMany", idsToDelete);
-
-
-            // Update state to remove deleted transactions
             setTransactions((prev) => prev.filter((tx) => !idsToDelete.includes(tx.id)));
+            setSelectedTransactions([]);
         } catch (err) {
             console.error("Failed to delete transactions:", err);
             alert("Something went wrong while deleting.");
@@ -482,24 +504,26 @@ export default function Transactions() {
                 <div className="flex-col flex mt-4 bg-card rounded-2xl flex-1 h-auto mb-4">
                     <div className="flex justify-between items-center mb-3">
                         <p className="text-white ml-5 mt-6 text-med font-light">Transactions</p>
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setShowForm(true)}
-                                className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 mr-5 mt-6 rounded"
-                            >
-                                <Plus className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (window.confirm("Are you sure you want to delete ALL filtered transactions?")) {
-                                        handleDeleteFiltered();
-                                    }
-                                }}
-                                className="text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 mr-5 mt-6 rounded"
-                            >
-                                <Trash className="w-4 h-4" />
-                            </button>
-                        </div>
+                    </div>
+
+                    <div className="flex items-center ml-5 mr-5 mb-2 text-white text-sm h-auto cursor-pointer">
+                        {getMasterIcon()}
+                        <button
+                            onClick={() => {
+                                if (window.confirm("Are you sure you want to delet e ALL filtered transactions?")) {
+                                    handleDeleteFiltered();
+                                }
+                            }}
+                            className="text-sm bg-red-600 hover:bg-red-700 text-white ml-2 px-2 py-1 rounded"
+                        >
+                            <Trash className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setShowForm(true)}
+                            className="text-sm bg-blue-500 hover:bg-blue-600 text-white text-right ml-auto px-2 py-1 rounded"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
                     </div>
 
                     {showForm && (
@@ -523,17 +547,23 @@ export default function Transactions() {
                                 const isIncome = parseFloat(tx.amount) > 0;
                                 const displayAmount = Math.abs(parseFloat(tx.amount)).toFixed(2);
                                 const amountColor = isIncome ? "text-green-400" : "text-red-400";
+                                const isSelected = selectedTransactions.includes(tx.id);
 
                                 return (
                                     <li
                                         key={tx.id}
                                         className="flex justify-between items-start border-b border-gray-700 pb-2"
                                     >
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">{tx.merchant || "Unknown"}</span>
-                                            <span className="text-xs text-gray-400">
-                                                {tx.category || "Uncategorized"} • {formatDate(tx.transactionDate)}
+                                        <div className="flex items-start gap-2">
+                                            <span onClick={() => toggleTransaction(tx.id)} className="mt-1 cursor-pointer">
+                                                {isSelected ? <CheckSquare /> : <Square />}
                                             </span>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">{tx.merchant || "Unknown"}</span>
+                                                <span className="text-xs text-gray-400">
+                                                    {tx.category || "Uncategorized"} • {formatDate(tx.transactionDate)}
+                                                </span>
+                                            </div>
                                         </div>
                                         <span className={`font-medium ${amountColor}`}>${displayAmount}</span>
                                     </li>
