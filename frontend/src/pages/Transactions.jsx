@@ -285,6 +285,7 @@ export default function Transactions() {
                                     setSelectedMerchants([...selectedMerchants, merchantQuery.trim()]);
                                 }
                                 setMerchantQuery("");
+                                setSelectedTransactions([]);
                             }
                         }}
                     />
@@ -297,6 +298,7 @@ export default function Transactions() {
                                     onClick={() => {
                                         setSelectedMerchants([...selectedMerchants, suggestion]);
                                         setMerchantQuery("");
+                                        setSelectedTransactions([]);
                                     }}
                                 >
                                     {suggestion}
@@ -310,9 +312,10 @@ export default function Transactions() {
                                 <span>{merchant}</span>
                                 <button
                                     className="text-xs"
-                                    onClick={() =>
-                                        setSelectedMerchants((prev) => prev.filter((m) => m !== merchant))
-                                    }
+                                    onClick={() => {
+                                        setSelectedMerchants((prev) => prev.filter((m) => m !== merchant));
+                                        setSelectedTransactions([]);
+                                    }}
                                 >
                                     ✕
                                 </button>
@@ -335,6 +338,7 @@ export default function Transactions() {
                                     setSelectedCategories([...selectedCategories, match]);
                                 }
                                 setCategoryQuery("");
+                                setSelectedTransactions([]);
                             }
                         }}
                     />
@@ -347,6 +351,7 @@ export default function Transactions() {
                                     onClick={() => {
                                         setSelectedCategories([...selectedCategories, suggestion]);
                                         setCategoryQuery("");
+                                        setSelectedTransactions([]);
                                     }}
                                 >
                                     {suggestion}
@@ -360,9 +365,10 @@ export default function Transactions() {
                                 <span>{category}</span>
                                 <button
                                     className="text-xs"
-                                    onClick={() =>
-                                        setSelectedCategories((prev) => prev.filter((c) => c !== category))
-                                    }
+                                    onClick={() => {
+                                        setSelectedCategories((prev) => prev.filter((c) => c !== category));
+                                        setSelectedTransactions([]);
+                                    }}
                                 >
                                     ✕
                                 </button>
@@ -377,14 +383,20 @@ export default function Transactions() {
                             <input
                                 type="date"
                                 value={dateMin ? dateMin.toISOString().split("T")[0] : ""}
-                                onChange={(e) => setDateMin(new Date(e.target.value))}
+                                onChange={(e) => {
+                                    setDateMin(new Date(e.target.value));
+                                    setSelectedTransactions([]);
+                                }}
                                 className="bg-gray-800 text-white px-3 py-1 w-1/2 rounded"
                             />
                             <span className="text-white">to</span>
                             <input
                                 type="date"
                                 value={dateMax ? dateMax.toISOString().split("T")[0] : ""}
-                                onChange={(e) => setDateMax(new Date(e.target.value))}
+                                onChange={(e) => {
+                                    setDateMax(new Date(e.target.value));
+                                    setSelectedTransactions([]);
+                                }}
                                 className="bg-gray-800 text-white px-3 py-1 w-1/2 rounded"
                             />
                         </div>
@@ -397,9 +409,10 @@ export default function Transactions() {
                                 type="number"
                                 placeholder="Min"
                                 value={amountMin ?? ""}
-                                onChange={(e) =>
-                                    setAmountMin(e.target.value ? parseFloat(e.target.value) : null)
-                                }
+                                onChange={(e) => {
+                                    setAmountMin(e.target.value ? parseFloat(e.target.value) : null);
+                                    setSelectedTransactions([]);
+                                }}
                                 className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
                             />
                             <span className="text-white">to</span>
@@ -407,9 +420,10 @@ export default function Transactions() {
                                 type="number"
                                 placeholder="Max"
                                 value={amountMax ?? ""}
-                                onChange={(e) =>
-                                    setAmountMax(e.target.value ? parseFloat(e.target.value) : null)
-                                }
+                                onChange={(e) => {
+                                    setAmountMax(e.target.value ? parseFloat(e.target.value) : null);
+                                    setSelectedTransactions([]);
+                                }}
                                 className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
                             />
                         </div>
@@ -531,7 +545,7 @@ export default function Transactions() {
                                 <Pencil className="w-4 h-4" />
                             </button>
                         )}
-                        {selectedTransactions.length == 0  && filteredTransactions.length > 0 && (
+                        {selectedTransactions.length == 0 && filteredTransactions.length > 0 && (
                             <span
                                 className="text-sm btext-white ml-2"
                             >
@@ -544,6 +558,7 @@ export default function Transactions() {
                                 setShowEditForm={setShowEditForm}
                                 transactions={transactions}
                                 setTransactions={setTransactions}
+                                expenseCategories={expenseCategories}
                             />
                         )}
 

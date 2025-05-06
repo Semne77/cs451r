@@ -6,6 +6,7 @@ const EditTransaction = ({
   setShowEditForm,
   transactions,
   setTransactions,
+  expenseCategories,
 }) => {
   const [formData, setFormData] = useState({
     merchant: "",
@@ -34,8 +35,23 @@ const EditTransaction = ({
 
     const updates = {};
     if (formData.merchant) updates.merchant = formData.merchant;
+    if (formData.amount) {
+      if (formData.category) {
+        if (expenseCategories.includes(formData.category)) {
+          updates.amount = -parseFloat(formData.amount);
+        } else {
+          updates.amount = parseFloat(formData.amount);
+        }
+      }
+      else {
+        if (expenseCategories.includes(updates.category)) {
+          updates.amount = -parseFloat(formData.amount);
+        } else {
+          updates.amount = parseFloat(formData.amount);
+        }
+      }
+    }
     if (formData.category) updates.category = formData.category;
-    if (formData.amount) updates.amount = parseFloat(formData.amount);
     if (formData.transactionDate)
       updates.transactionDate = new Date(formData.transactionDate).toISOString();
 
