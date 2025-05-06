@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, } from "@/components/ui/card";
-import { Plus, Trash, Square, CheckSquare, MinusSquare } from "lucide-react";
+import { Plus, Trash, Square, CheckSquare, MinusSquare, Pencil } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AddTransaction from "../components/AddTransaction";
+import EditTransaction from "../components/EditTransaction";
 import axios from "axios";
 
 function EmptyFieldMessage({ field }) {
@@ -218,6 +219,7 @@ export default function Transactions() {
 
 
     const [showForm, setShowForm] = useState(false);
+    const [showEditForm, setShowEditForm] = useState(false);
     const [formData, setFormData] = useState({
         type: "Expense",
         merchant: "",
@@ -508,16 +510,44 @@ export default function Transactions() {
 
                     <div className="flex items-center ml-5 mr-5 mb-2 text-white text-sm h-auto cursor-pointer">
                         {getMasterIcon()}
-                        <button
-                            onClick={() => {
-                                if (window.confirm("Are you sure you want to delet e ALL filtered transactions?")) {
-                                    handleDeleteFiltered();
-                                }
-                            }}
-                            className="text-sm bg-red-600 hover:bg-red-700 text-white ml-2 px-2 py-1 rounded"
-                        >
-                            <Trash className="w-4 h-4" />
-                        </button>
+                        {selectedTransactions.length > 0 && (
+                            <button
+                                onClick={() => {
+                                    const count = selectedTransactions.length;
+                                    if (window.confirm(`Are you sure you want to delete ${count} selected transaction${count > 1 ? "s" : ""}?`)) {
+                                        handleDeleteFiltered();
+                                    }
+                                }}
+                                className="text-sm bg-red-600 hover:bg-red-700 text-white ml-2 px-2 py-1 rounded"
+                            >
+                                <Trash className="w-4 h-4" />
+                            </button>
+                        )}
+                        {selectedTransactions.length > 0 && (
+                            <button
+                                onClick={() => setShowEditForm(true)}
+                                className="text-sm bg-yellow-500 hover:bg-yellow-600 text-white ml-2 px-2 py-1 rounded"
+                            >
+                                <Pencil className="w-4 h-4" />
+                            </button>
+                        )}
+                        {selectedTransactions.length == 0  && filteredTransactions.length > 0 && (
+                            <span
+                                className="text-sm btext-white ml-2"
+                            >
+                                0 selected
+                            </span>
+                        )}
+                        {showEditForm && (
+                            <EditTransaction
+                                selectedTransactions={transactions.filter(tx => selectedTransactions.includes(tx.id))}
+                                setShowEditForm={setShowEditForm}
+                                transactions={transactions}
+                                setTransactions={setTransactions}
+                            />
+                        )}
+
+
                         <button
                             onClick={() => setShowForm(true)}
                             className="text-sm bg-blue-500 hover:bg-blue-600 text-white text-right ml-auto px-2 py-1 rounded"

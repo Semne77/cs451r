@@ -34,7 +34,8 @@ public class Transaction {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public Transaction() {}
+    public Transaction() {
+    }
 
     public Transaction(BigDecimal amount, LocalDateTime transactionDate, String merchant, String category, int userId, LocalDateTime createdAt) {
         this.amount = amount;
@@ -45,11 +46,47 @@ public class Transaction {
         this.createdAt = createdAt;
     }
 
-    public BigDecimal getAmount() { return amount; }
-    public LocalDateTime getTransactionDate() { return transactionDate; }
-    public String getMerchant() { return merchant; }
-    public String getCategory() { return category; }
-    public int getUserId() { return userId; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public int getId() { return id; }
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public LocalDateTime getTransactionDate() {
+        return transactionDate;
+    }
+
+    public String getMerchant() {
+        return merchant;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public int getUserId() {
+        return userId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public void setTransactionDate(LocalDateTime transactionDate) {
+        this.transactionDate = transactionDate;
+    }
+
+    public void setMerchant(String merchant) {
+        this.merchant = merchant;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
 }
