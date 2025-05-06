@@ -16,24 +16,37 @@ export function LoginForm({ className, ...props }) {
 
 
     const handleLogin = async (evt) => {
-        evt.preventDefault()
-
+        // Prevent the form from refreshing the page (default behavior of form submission)
+        evt.preventDefault();
+    
+        // 🧾 Create a userInfo object with values from the form inputs
         const userInfo = {
-            email: evt.target.email.value,
-            password: evt.target.password.value
-        }
-
+            email: evt.target.email.value,      // Grab email input value
+            password: evt.target.password.value // Grab password input value
+        };
+    
+        // Send a POST request to the backend to validate login credentials
         let response = await axios.post("http://localhost:8080/users/getUser", userInfo);
+        
+        // Extract the response body (actual user data)
         response = response.data;
-
+    
+        // If email is 'unknown', it means login failed (wrong email/password)
         if (response.email === "unknown") {
-            setValidLogIn(false);
-        }
+            setValidLogIn(false); // Trigger an error message in the UI
+        } 
         else {
+            //  Login is successful
             setValidLogIn(true);
+    
+            // Save the logged-in user's ID in localStorage (used for future auth checks)
+            localStorage.setItem("userId", response.userId);
+    
+            // Redirect the user to their personal dashboard
             navigate(`/dashboard/${response.userId}`);
         }
-    }
+    };
+    
 
     return (
         <form onSubmit={handleLogin} className={cn("flex flex-col gap-6 w-110", className)} {...props}>
