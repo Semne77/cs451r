@@ -7,6 +7,7 @@ const EditTransaction = ({
   transactions,
   setTransactions,
   expenseCategories,
+  incomeCategories,
 }) => {
   const [formData, setFormData] = useState({
     merchant: "",
@@ -16,7 +17,6 @@ const EditTransaction = ({
   });
 
   useEffect(() => {
-    // Pre-fill only if all selected transactions share the same value
     const fieldCheck = (key) => {
       const values = selectedTransactions.map((t) => t[key]).filter(Boolean);
       return [...new Set(values)].length === 1 ? values[0] : "";
@@ -25,7 +25,7 @@ const EditTransaction = ({
     setFormData({
       merchant: fieldCheck("merchant"),
       category: fieldCheck("category"),
-      amount: fieldCheck("amount")?.toString(),
+      amount: fieldCheck("amount") === "" ? "" : Math.abs(fieldCheck("amount")).toString(),
       transactionDate: fieldCheck("transactionDate")?.split("T")[0],
     });
   }, [selectedTransactions]);
@@ -36,30 +36,23 @@ const EditTransaction = ({
     const updates = {};
     if (formData.merchant) updates.merchant = formData.merchant;
     if (formData.amount) {
-      if (formData.category) {
-        if (expenseCategories.includes(formData.category)) {
-          updates.amount = -parseFloat(formData.amount);
-        } else {
-          updates.amount = parseFloat(formData.amount);
-        }
-      }
-      else {
-        if (expenseCategories.includes(updates.category)) {
-          updates.amount = -parseFloat(formData.amount);
-        } else {
-          updates.amount = parseFloat(formData.amount);
-        }
+      const categoryToCheck = formData.category || updates.category;
+      if (expenseCategories.includes(categoryToCheck)) {
+        updates.amount = -Math.abs(parseFloat(formData.amount));
+      } else {
+        updates.amount = Math.abs(parseFloat(formData.amount));
       }
     }
     if (formData.category) updates.category = formData.category;
-    if (formData.transactionDate)
+    if (formData.transactionDate) {
       updates.transactionDate = new Date(formData.transactionDate).toISOString();
+    }
 
     try {
       const ids = selectedTransactions.map((tx) => tx.id);
+      console.log("Editing transactions", { ids, updates });
       await axios.put("http://localhost:8080/transactions/edit", { ids, updates });
 
-      // Optimistic update
       const updated = transactions.map((t) =>
         ids.includes(t.id) ? { ...t, ...updates } : t
       );
@@ -69,6 +62,8 @@ const EditTransaction = ({
       console.error("Failed to edit transactions", err);
     }
   };
+
+  const allCategories = [...new Set([...incomeCategories, ...expenseCategories])];
 
   return (
     <div
@@ -88,15 +83,27 @@ const EditTransaction = ({
             <div key={field}>
               <label className="block text-sm capitalize">{field}</label>
               <input
-                type={field === "amount" ? "number" : field === "transactionDate" ? "date" : "text"}
-                value={formData[field]}
-                onChange={(e) =>
-                  setFormData({ ...formData, [field]: e.target.value })
+                type={
+                  field === "amount"
+                    ? "number"
+                    : field === "transactionDate"
+                      ? "date"
+                      : "text"
                 }
+                value={formData[field] || ""}
+                onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
                 className="w-full p-1 text-white rounded bg-gray-800"
+                list={field === "category" ? "category-options" : undefined}
               />
             </div>
           ))}
+
+          {/* Datalist for category */}
+          <datalist id="category-options">
+            {allCategories.map((cat, i) => (
+              <option key={i} value={cat} />
+            ))}
+          </datalist>
 
           <div className="flex justify-end gap-4">
             <button

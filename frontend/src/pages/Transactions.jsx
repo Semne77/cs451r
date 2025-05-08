@@ -558,6 +558,7 @@ export default function Transactions() {
                                 setShowEditForm={setShowEditForm}
                                 transactions={transactions}
                                 setTransactions={setTransactions}
+                                incomeCategories={incomeCategories}
                                 expenseCategories={expenseCategories}
                             />
                         )}

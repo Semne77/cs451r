@@ -48,17 +48,28 @@ public class TransactionService {
             }
 
             if (updates.containsKey("amount")) {
+                Object amtObj = updates.get("amount");
                 try {
-                    BigDecimal amount = new BigDecimal(updates.get("amount").toString());
+                    BigDecimal amount;
+                    if (amtObj instanceof Integer) {
+                        amount = BigDecimal.valueOf((Integer) amtObj);
+                    } else if (amtObj instanceof Double) {
+                        amount = BigDecimal.valueOf((Double) amtObj);
+                    } else if (amtObj instanceof String) {
+                        amount = new BigDecimal((String) amtObj);
+                    } else {
+                        throw new IllegalArgumentException("Unsupported amount type: " + amtObj.getClass());
+                    }
                     tx.setAmount(amount);
                 } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid amount format");
+                    throw new IllegalArgumentException("Invalid amount format: " + amtObj);
                 }
             }
 
             if (updates.containsKey("transactionDate")) {
                 try {
-                    LocalDateTime date = LocalDateTime.parse(updates.get("transactionDate").toString());
+                    String dateStr = updates.get("transactionDate").toString().replace("Z", "");
+                    LocalDateTime date = LocalDateTime.parse(dateStr);
                     tx.setTransactionDate(date);
                 } catch (DateTimeParseException e) {
                     throw new IllegalArgumentException("Invalid transactionDate format");
