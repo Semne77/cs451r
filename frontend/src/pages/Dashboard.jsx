@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import TransactionChart from "@/components/TransactionChart";
 import AddTransaction from "../components/AddTransaction";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function EmptyFieldMessage({ field }) {
     return (
@@ -16,19 +17,51 @@ export default function Dashboard() {
 
     const params = useParams();
     const [firstName, setFirstName] = useState("");
+    const navigate = useNavigate();
+    const [unauthorized, setUnauthorized] = useState(false);
 
     useEffect(() => {
+        // Define an async function to fetch user data from the backend
         const fetchUser = async () => {
             try {
-                const res = await axios.get(`http://localhost:8080/users/${params.id}`);
+                // Make a GET request to fetch the user data using the ID from the URL (params.id)
+                // Also send a custom header "user-id" from localStorage for authorization checking
+                const res = await axios.get(`http://localhost:8080/users/${params.id}`, {
+                    headers: {
+                        "user-id": localStorage.getItem("userId")
+                    }
+                });
+
+                // Save the user's first name to state so we can display it
                 setFirstName(res.data.firstName);
+
+                // Log the full user data for debugging purposes
+                console.log("This is my data", res.data);
             } catch (err) {
+                // Log any error that happens during the request
                 console.error("Failed to fetch user:", err);
             }
         };
 
+        // Call the function when the component mounts or when the URL param changes
         fetchUser();
-    }, [params.id]);
+    }, [params.id]); // 🔁 Re-run this effect if the URL parameter (user ID) changes
+
+
+    // 🔁 useEffect to check if the logged-in user is allowed to view the dashboard
+    useEffect(() => {
+        // Get the currently logged-in user's ID from localStorage
+        const storedUserId = localStorage.getItem("userId");
+
+        // Compare the stored ID to the ID in the URL
+        if (storedUserId === params.id) {
+            // ✅ User is accessing their own dashboard — allow access
+            setUnauthorized(false); // Clear any previous "unauthorized" flag
+        } else {
+            // ❌ User is trying to access someone else's dashboard — block access
+            setUnauthorized(true);
+        }
+    }, [params.id]); // Re-run this check any time the URL changes
 
     const [transactions, setTransactions] = useState([]);
 
@@ -44,6 +77,21 @@ export default function Dashboard() {
 
         fetchTransactions();
     }, [params.id]);
+
+    const [goals, setGoals] = useState([]);
+
+    useEffect(() => {
+        const fetchGoals = async () => {
+            try {
+                const res = await axios.get(`http://localhost:8080/api/goals/${params.id}`);
+                setGoals(res.data);
+            } catch (err) {
+                console.error("Failed to fetch goals:", err);
+            }
+        };
+        fetchGoals();
+    }, [params.id]);
+
 
     const [timeRange, setTimeRange] = useState("Year");
 
@@ -232,6 +280,66 @@ export default function Dashboard() {
         amount: ""
     });
 
+    // 🔒 If the user is not authorized to view this page, show an Access Denied screen
+    if (unauthorized) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen text-white">
+                {/* 🚫 Error title */}
+                <h1 className="text-3xl font-bold mb-4">🚫 Access Denied</h1>
+
+                {/* Brief explanation */}
+                <p className="text-lg">You are trying to view another user's dashboard.</p>
+
+                {/* Redirect button to take user to their own dashboard */}
+                <button
+                    onClick={() => {
+                        // Get the logged-in user's ID from localStorage
+                        const userId = localStorage.getItem("userId");
+
+                        // Navigate to the correct dashboard
+                        navigate(`/dashboard/${userId}`);
+                    }}
+                    className="mt-6 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded"
+                >
+                    Go to My Dashboard
+                </button>
+            </div>
+        );
+    }
+
+    const getGoalProgress = (goal) => {
+        const now = new Date();
+        const start = new Date(goal.startDate);
+        const end = new Date(goal.endDate);
+        const totalTime = end - start;
+        const timeElapsed = Math.min(now - start, totalTime);
+        const timeProgress = totalTime > 0 ? (timeElapsed / totalTime) * 100 : 100;
+
+        const daysElapsed = Math.ceil(timeElapsed / (1000 * 60 * 60 * 24));
+        const totalDays = Math.ceil(totalTime / (1000 * 60 * 60 * 24));
+
+        const matchingTx = transactions.filter((t) => {
+            const txDate = new Date(t.transactionDate);
+            return (
+                t.category === goal.category &&
+                txDate >= start &&
+                txDate <= end &&
+                t.amount < 0
+            );
+        });
+
+        const totalSpent = matchingTx.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        const budgetProgress =
+            goal.targetAmount > 0 ? (totalSpent / goal.targetAmount) * 100 : 100;
+
+        return {
+            timeProgress: Math.min(timeProgress, 100),
+            budgetProgress: Math.min(budgetProgress, 100),
+            daysElapsed,
+            totalDays,
+            totalSpent: totalSpent.toFixed(2),
+        };
+    };
 
 
     return (
@@ -286,7 +394,42 @@ export default function Dashboard() {
                     </div>
                     <div className="flex flex-col flex-[1] h-145 bg-card rounded-2xl">
                         <p className="text-white ml-5 mt-6 text-med font-light">Goals</p>
-                        <EmptyFieldMessage field={"goals"} />
+                        <div className="flex flex-col gap-4 px-5 pb-5 overflow-y-auto max-h-72">
+                            {goals.length === 0 ? (
+                                <EmptyFieldMessage field="goals" />
+                            ) : (
+                                goals.map((goal) => {
+                                    const {
+                                        timeProgress,
+                                        budgetProgress,
+                                        totalSpent,
+                                        daysElapsed,
+                                        totalDays
+                                    } = getGoalProgress(goal);
+
+                                    return (
+                                        <div key={goal.goalId} className="bg-gray-700 p-3 rounded-lg">
+                                            <div className="text-white font-semibold text-sm">{goal.goalType}</div>
+                                            <div className="text-xs text-gray-300 mb-1">
+                                                {goal.category} • ${totalSpent} of ${goal.targetAmount}
+                                            </div>
+                                            <div className="text-xs text-gray-400 mb-1">
+                                                {goal.startDate} to {goal.endDate} • {daysElapsed} of {totalDays} days
+                                            </div>
+                                            <div className="text-xs text-gray-300">Time Elapsed</div>
+                                            <div className="w-full h-2 bg-gray-600 rounded overflow-hidden mb-2">
+                                                <div className="h-full bg-blue-500" style={{ width: `${timeProgress}%` }} />
+                                            </div>
+                                            <div className="text-xs text-gray-300">Budget Spent</div>
+                                            <div className="w-full h-2 bg-gray-600 rounded overflow-hidden">
+                                                <div className="h-full bg-green-500" style={{ width: `${budgetProgress}%` }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
                     </div>
                 </div>
 

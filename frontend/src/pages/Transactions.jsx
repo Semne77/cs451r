@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, } from "@/components/ui/card";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, Square, CheckSquare, MinusSquare, Pencil } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AddTransaction from "../components/AddTransaction";
+import EditTransaction from "../components/EditTransaction";
 import axios from "axios";
 
 function EmptyFieldMessage({ field }) {
@@ -218,6 +219,7 @@ export default function Transactions() {
 
 
     const [showForm, setShowForm] = useState(false);
+    const [showEditForm, setShowEditForm] = useState(false);
     const [formData, setFormData] = useState({
         type: "Expense",
         merchant: "",
@@ -226,16 +228,38 @@ export default function Transactions() {
         amount: ""
     });
 
+    const [selectedTransactions, setSelectedTransactions] = useState([])
+    const toggleAll = () => {
+        const allIds = filteredTransactions.map(tx => tx.id);
+        const isSomeSelected = selectedTransactions.length != 0;
+        setSelectedTransactions(isSomeSelected ? [] : allIds);
+    };
+
+    const getMasterIcon = () => {
+        const selectedCount = selectedTransactions.length;
+        const total = filteredTransactions.length;
+
+        if (selectedCount === 0) return <Square onClick={toggleAll} className="cursor-pointer" />;
+        if (selectedCount === total) return <CheckSquare onClick={toggleAll} className="cursor-pointer" />;
+        return <MinusSquare onClick={toggleAll} className="cursor-pointer" />;
+    };
+
+    const toggleTransaction = (id) => {
+        setSelectedTransactions((prev) =>
+            prev.includes(id) ? prev.filter(txId => txId !== id) : [...prev, id]
+        );
+    };
+
+
+
     const handleDeleteFiltered = async () => {
-        const idsToDelete = filteredTransactions.map((tx) => tx.id);
+        const idsToDelete = selectedTransactions;
 
         try {
             console.log("Deleting transactions: " + idsToDelete);
             await axios.post("http://localhost:8080/transactions/deleteMany", idsToDelete);
-
-
-            // Update state to remove deleted transactions
             setTransactions((prev) => prev.filter((tx) => !idsToDelete.includes(tx.id)));
+            setSelectedTransactions([]);
         } catch (err) {
             console.error("Failed to delete transactions:", err);
             alert("Something went wrong while deleting.");
@@ -245,7 +269,7 @@ export default function Transactions() {
     return (
         <div className="flex">
             <Sidebar />
-            <div className="w-full h-screen mr-8 ml-8 mt-4 flex-col">
+            <div className="w-full mr-8 ml-8 mt-4 flex-col">
                 <h1 className="text-white text-2xl font-bold">Sort & filter your transactions!</h1>
                 <div className="mb-4">
                     <label className="text-white block mb-1">Filter by Merchant</label>
@@ -261,6 +285,7 @@ export default function Transactions() {
                                     setSelectedMerchants([...selectedMerchants, merchantQuery.trim()]);
                                 }
                                 setMerchantQuery("");
+                                setSelectedTransactions([]);
                             }
                         }}
                     />
@@ -273,6 +298,7 @@ export default function Transactions() {
                                     onClick={() => {
                                         setSelectedMerchants([...selectedMerchants, suggestion]);
                                         setMerchantQuery("");
+                                        setSelectedTransactions([]);
                                     }}
                                 >
                                     {suggestion}
@@ -286,9 +312,10 @@ export default function Transactions() {
                                 <span>{merchant}</span>
                                 <button
                                     className="text-xs"
-                                    onClick={() =>
-                                        setSelectedMerchants((prev) => prev.filter((m) => m !== merchant))
-                                    }
+                                    onClick={() => {
+                                        setSelectedMerchants((prev) => prev.filter((m) => m !== merchant));
+                                        setSelectedTransactions([]);
+                                    }}
                                 >
                                     ✕
                                 </button>
@@ -311,6 +338,7 @@ export default function Transactions() {
                                     setSelectedCategories([...selectedCategories, match]);
                                 }
                                 setCategoryQuery("");
+                                setSelectedTransactions([]);
                             }
                         }}
                     />
@@ -323,6 +351,7 @@ export default function Transactions() {
                                     onClick={() => {
                                         setSelectedCategories([...selectedCategories, suggestion]);
                                         setCategoryQuery("");
+                                        setSelectedTransactions([]);
                                     }}
                                 >
                                     {suggestion}
@@ -336,9 +365,10 @@ export default function Transactions() {
                                 <span>{category}</span>
                                 <button
                                     className="text-xs"
-                                    onClick={() =>
-                                        setSelectedCategories((prev) => prev.filter((c) => c !== category))
-                                    }
+                                    onClick={() => {
+                                        setSelectedCategories((prev) => prev.filter((c) => c !== category));
+                                        setSelectedTransactions([]);
+                                    }}
                                 >
                                     ✕
                                 </button>
@@ -346,157 +376,200 @@ export default function Transactions() {
                         ))}
                     </div>
                 </div>
-                <div className="mb-4">
-                    <label className="text-white block mb-1">Filter by Transaction Date</label>
-                    <div className="flex gap-2 items-center mb-2">
-                        <input
-                            type="date"
-                            value={dateMin ? dateMin.toISOString().split("T")[0] : ""}
-                            onChange={(e) => setDateMin(new Date(e.target.value))}
-                            className="bg-gray-800 text-white px-3 py-1 rounded"
-                        />
-                        <span className="text-white">to</span>
-                        <input
-                            type="date"
-                            value={dateMax ? dateMax.toISOString().split("T")[0] : ""}
-                            onChange={(e) => setDateMax(new Date(e.target.value))}
-                            className="bg-gray-800 text-white px-3 py-1 rounded"
-                        />
+                <div className="flex flex-wrap gap-x-4 mb-4">
+                    <div className="basis-[calc(50%-1rem)]">
+                        <label className="text-white block mb-1">Filter by Transaction Date</label>
+                        <div className="flex gap-2 items-center mb-2">
+                            <input
+                                type="date"
+                                value={dateMin ? dateMin.toISOString().split("T")[0] : ""}
+                                onChange={(e) => {
+                                    setDateMin(new Date(e.target.value));
+                                    setSelectedTransactions([]);
+                                }}
+                                className="bg-gray-800 text-white px-3 py-1 w-1/2 rounded"
+                            />
+                            <span className="text-white">to</span>
+                            <input
+                                type="date"
+                                value={dateMax ? dateMax.toISOString().split("T")[0] : ""}
+                                onChange={(e) => {
+                                    setDateMax(new Date(e.target.value));
+                                    setSelectedTransactions([]);
+                                }}
+                                className="bg-gray-800 text-white px-3 py-1 w-1/2 rounded"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="basis-[calc(50%-1rem)]">
+                        <label className="text-white block mb-1">Filter by Amount</label>
+                        <div className="flex gap-2 items-center mb-2">
+                            <input
+                                type="number"
+                                placeholder="Min"
+                                value={amountMin ?? ""}
+                                onChange={(e) => {
+                                    setAmountMin(e.target.value ? parseFloat(e.target.value) : null);
+                                    setSelectedTransactions([]);
+                                }}
+                                className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
+                            />
+                            <span className="text-white">to</span>
+                            <input
+                                type="number"
+                                placeholder="Max"
+                                value={amountMax ?? ""}
+                                onChange={(e) => {
+                                    setAmountMax(e.target.value ? parseFloat(e.target.value) : null);
+                                    setSelectedTransactions([]);
+                                }}
+                                className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <div className="mb-4">
-                    <label className="text-white block mb-1">Filter by Amount</label>
-                    <div className="flex gap-2 items-center mb-2">
-                        <input
-                            type="number"
-                            placeholder="Min"
-                            value={amountMin ?? ""}
-                            onChange={(e) =>
-                                setAmountMin(e.target.value ? parseFloat(e.target.value) : null)
-                            }
-                            className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
-                        />
-                        <span className="text-white">to</span>
-                        <input
-                            type="number"
-                            placeholder="Max"
-                            value={amountMax ?? ""}
-                            onChange={(e) =>
-                                setAmountMax(e.target.value ? parseFloat(e.target.value) : null)
-                            }
-                            className="bg-gray-800 text-white px-3 py-1 rounded w-1/2"
-                        />
+                <div className="flex flex-wrap gap-x-4 mb-4">
+                    <div className="basis-[calc(25%-1rem)]">
+                        <label className="text-white block mb-1">Sort Merchants</label>
+                        <select
+                            className="bg-gray-800 text-white px-3 py-1 w-full rounded"
+                            value={merchantSort}
+                            onChange={(e) => {
+                                setMerchantSort(e.target.value);
+                                setCategorySort("");
+                                setDateSort("");
+                                setAmountSort("");
+                            }}
+                        >
+                            <option value="">None</option>
+                            <option value="a-z">Name: A → Z</option>
+                            <option value="z-a">Name: Z → A</option>
+                            <option value="total-asc">Total: Low → High</option>
+                            <option value="total-desc">Total: High → Low</option>
+                            <option value="recent">Most Recent</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="count-asc"># of Tx: Low → High</option>
+                            <option value="count-desc"># of Tx: High → Low</option>
+                        </select>
                     </div>
-                </div>
 
+                    <div className="basis-[calc(25%-1rem)]">
+                        <label className="text-white block mb-1">Sort Categories</label>
+                        <select
+                            className="bg-gray-800 text-white px-3 py-1 w-full rounded"
+                            value={categorySort}
+                            onChange={(e) => {
+                                setCategorySort(e.target.value);
+                                setDateSort("");
+                                setAmountSort("");
+                                setMerchantSort("");
+                            }}
+                        >
+                            <option value="">None</option>
+                            <option value="a-z">Name: A → Z</option>
+                            <option value="z-a">Name: Z → A</option>
+                            <option value="total-asc">Total: Low → High</option>
+                            <option value="total-desc">Total: High → Low</option>
+                            <option value="recent">Most Recent</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="count-asc"># of Tx: Low → High</option>
+                            <option value="count-desc"># of Tx: High → Low</option>
+                        </select>
+                    </div>
 
-                <div className="mb-4 inline-block">
-                    <label className="text-white block mb-1">Sort Merchants</label>
-                    <select
-                        className="bg-gray-800 text-white px-3 py-1 rounded"
-                        value={merchantSort}
-                        onChange={(e) => {
-                            setMerchantSort(e.target.value);
-                            setCategorySort("");
-                            setDateSort("");
-                            setAmountSort("");
-                        }}
-                    >
-                        <option value="">None</option>
-                        <option value="a-z">Name: A → Z</option>
-                        <option value="z-a">Name: Z → A</option>
-                        <option value="total-asc">Total: Low → High</option>
-                        <option value="total-desc">Total: High → Low</option>
-                        <option value="recent">Most Recent</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="count-asc"># of Tx: Low → High</option>
-                        <option value="count-desc"># of Tx: High → Low</option>
-                    </select>
-                </div>
+                    <div className="basis-[calc(25%-1rem)]">
+                        <label className="text-white block mb-1">Sort by Transaction Date</label>
+                        <select
+                            className="bg-gray-800 text-white px-3 py-1 w-full rounded"
+                            value={dateSort}
+                            onChange={(e) => {
+                                setDateSort(e.target.value);
+                                setAmountSort("");
+                                setMerchantSort("");
+                                setCategorySort("");
+                            }}
+                        >
+                            <option value="">None</option>
+                            <option value="recent">Newest → Oldest</option>
+                            <option value="oldest">Oldest → Newest</option>
+                        </select>
+                    </div>
 
-                <div className="mb-4 inline-block">
-                    <label className="text-white block mb-1">Sort Categories</label>
-                    <select
-                        className="bg-gray-800 text-white px-3 py-1 rounded"
-                        value={categorySort}
-                        onChange={(e) => {
-                            setCategorySort(e.target.value);
-                            setDateSort("");
-                            setAmountSort("");
-                            setMerchantSort("");
-                        }}
-                    >
-                        <option value="">None</option>
-                        <option value="a-z">Name: A → Z</option>
-                        <option value="z-a">Name: Z → A</option>
-                        <option value="total-asc">Total: Low → High</option>
-                        <option value="total-desc">Total: High → Low</option>
-                        <option value="recent">Most Recent</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="count-asc"># of Tx: Low → High</option>
-                        <option value="count-desc"># of Tx: High → Low</option>
-                    </select>
-                </div>
-
-                <div className="mb-4 inline-block">
-                    <label className="text-white block mb-1">Sort by Transaction Date</label>
-                    <select
-                        className="bg-gray-800 text-white px-3 py-1 rounded"
-                        value={dateSort}
-                        onChange={(e) => {
-                            setDateSort(e.target.value);
-                            setAmountSort("");
-                            setMerchantSort("");
-                            setCategorySort("");
-                        }}
-                    >
-                        <option value="">None</option>
-                        <option value="recent">Newest → Oldest</option>
-                        <option value="oldest">Oldest → Newest</option>
-                    </select>
-                </div>
-
-                <div className="mb-4 inline-block">
-                    <label className="text-white block mb-1">Sort by Amount</label>
-                    <select
-                        className="bg-gray-800 text-white px-3 py-1 rounded"
-                        value={amountSort}
-                        onChange={(e) => {
-                            setAmountSort(e.target.value);
-                            setDateSort("");
-                            setMerchantSort("");
-                            setCategorySort("");
-                        }}
-                    >
-                        <option value="">None</option>
-                        <option value="amount-asc">Amount: Low → High</option>
-                        <option value="amount-desc">Amount: High → Low</option>
-                    </select>
+                    <div className="basis-[calc(25%-1rem)]">
+                        <label className="text-white block mb-1">Sort by Amount</label>
+                        <select
+                            className="bg-gray-800 text-white px-3 py-1 w-full rounded"
+                            value={amountSort}
+                            onChange={(e) => {
+                                setAmountSort(e.target.value);
+                                setDateSort("");
+                                setMerchantSort("");
+                                setCategorySort("");
+                            }}
+                        >
+                            <option value="">None</option>
+                            <option value="amount-asc">Amount: Low → High</option>
+                            <option value="amount-desc">Amount: High → Low</option>
+                        </select>
+                    </div>
                 </div>
 
 
                 <div className="flex-col flex mt-4 bg-card rounded-2xl flex-1 h-auto mb-4">
                     <div className="flex justify-between items-center mb-3">
                         <p className="text-white ml-5 mt-6 text-med font-light">Transactions</p>
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setShowForm(true)}
-                                className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 mr-5 mt-6 rounded"
-                            >
-                                <Plus className="w-4 h-4" />
-                            </button>
+                    </div>
+
+                    <div className="flex items-center ml-5 mr-5 mb-2 text-white text-sm h-auto cursor-pointer">
+                        {getMasterIcon()}
+                        {selectedTransactions.length > 0 && (
                             <button
                                 onClick={() => {
-                                    if (window.confirm("Are you sure you want to delete ALL filtered transactions?")) {
+                                    const count = selectedTransactions.length;
+                                    if (window.confirm(`Are you sure you want to delete ${count} selected transaction${count > 1 ? "s" : ""}?`)) {
                                         handleDeleteFiltered();
                                     }
                                 }}
-                                className="text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 mr-5 mt-6 rounded"
+                                className="text-sm bg-red-600 hover:bg-red-700 text-white ml-2 px-2 py-1 rounded"
                             >
                                 <Trash className="w-4 h-4" />
                             </button>
-                        </div>
+                        )}
+                        {selectedTransactions.length > 0 && (
+                            <button
+                                onClick={() => setShowEditForm(true)}
+                                className="text-sm bg-yellow-500 hover:bg-yellow-600 text-white ml-2 px-2 py-1 rounded"
+                            >
+                                <Pencil className="w-4 h-4" />
+                            </button>
+                        )}
+                        {selectedTransactions.length == 0 && filteredTransactions.length > 0 && (
+                            <span
+                                className="text-sm btext-white ml-2"
+                            >
+                                0 selected
+                            </span>
+                        )}
+                        {showEditForm && (
+                            <EditTransaction
+                                selectedTransactions={transactions.filter(tx => selectedTransactions.includes(tx.id))}
+                                setShowEditForm={setShowEditForm}
+                                transactions={transactions}
+                                setTransactions={setTransactions}
+                                incomeCategories={incomeCategories}
+                                expenseCategories={expenseCategories}
+                            />
+                        )}
+
+
+                        <button
+                            onClick={() => setShowForm(true)}
+                            className="text-sm bg-blue-500 hover:bg-blue-600 text-white text-right ml-auto px-2 py-1 rounded"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
                     </div>
 
                     {showForm && (
@@ -520,17 +593,23 @@ export default function Transactions() {
                                 const isIncome = parseFloat(tx.amount) > 0;
                                 const displayAmount = Math.abs(parseFloat(tx.amount)).toFixed(2);
                                 const amountColor = isIncome ? "text-green-400" : "text-red-400";
+                                const isSelected = selectedTransactions.includes(tx.id);
 
                                 return (
                                     <li
                                         key={tx.id}
                                         className="flex justify-between items-start border-b border-gray-700 pb-2"
                                     >
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">{tx.merchant || "Unknown"}</span>
-                                            <span className="text-xs text-gray-400">
-                                                {tx.category || "Uncategorized"} • {formatDate(tx.transactionDate)}
+                                        <div className="flex items-start gap-2">
+                                            <span onClick={() => toggleTransaction(tx.id)} className="mt-1 cursor-pointer">
+                                                {isSelected ? <CheckSquare /> : <Square />}
                                             </span>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">{tx.merchant || "Unknown"}</span>
+                                                <span className="text-xs text-gray-400">
+                                                    {tx.category || "Uncategorized"} • {formatDate(tx.transactionDate)}
+                                                </span>
+                                            </div>
                                         </div>
                                         <span className={`font-medium ${amountColor}`}>${displayAmount}</span>
                                     </li>

@@ -12,20 +12,31 @@ export function RegisterForm({ className, ...props }) {
 
 
     const handleSignUp = async (evt) => {
-        evt.preventDefault()
+        // Prevent default form submission behavior (so the page doesn't reload)
+        evt.preventDefault();
+    
+        //  Collect user data from the sign-up form inputs
         const userInfo = {
-            firstName: evt.target.name.value,
-            lastName: evt.target.lastname.value,
-            email: evt.target.email.value,
-            phone: evt.target.phone.value,
-            password: evt.target.password.value
-        }
-
+            firstName: evt.target.name.value,      // First name input
+            lastName: evt.target.lastname.value,   // Last name input
+            email: evt.target.email.value,         // Email input
+            phone: evt.target.phone.value,         // Phone number input
+            password: evt.target.password.value    // Password input (will be hashed in backend)
+        };
+    
+        //  Send a POST request to the backend to register the new user
         let response = await axios.post("http://localhost:8080/users/newUser", userInfo);
+    
+        //  Extract the created user from the response
         response = response.data;
-
+    
+        //  Store the user ID in localStorage so we know who is logged in
+        localStorage.setItem("userId", response.userId);
+    
+        // Redirect the new user to their personal dashboard
         navigate(`/dashboard/${response.userId}`);
-    }
+    };
+    
 
     return (
         <form onSubmit={handleSignUp} className={cn("flex flex-col gap-6 w-110", className)} {...props}>

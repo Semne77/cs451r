@@ -3,8 +3,11 @@ package com.commoncents.backend.user;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.security.MessageDigest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,15 +53,32 @@ public class UserController {
 
     @PostMapping(path = "/newUser")
     public User addUser(@RequestBody User user) {
+        String pas = hashPassword(user.getPassword());
+        user.setPassword(pas);
         userService.addNewUser(user);
-        user = userService.getUser(user.getEmail());
+        // user = userService.getUser(user.getEmail());
         return user;
     }
 
+    // 📥 Handle GET requests to /users/{id}
     @GetMapping(path = "/{id}")
-    public User getUserById(@PathVariable int id) {
-        return userService.getUserById(id);
-    }
+    public ResponseEntity<User> getUserById(@PathVariable int id, HttpServletRequest request) {
+
+        //  Get the ID of the currently logged-in user from the request header (or token/session)
+        int loggedInUserId = getUserIdFromSessionOrToken(request);
+
+        //  If the logged-in user is trying to access someone else's data, deny access
+        if (loggedInUserId != id) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 Forbidden
+        }
+
+        //  If IDs match, retrieve the user from the database
+        User user = userService.getUserById(id);
+
+        //  Return the user in the HTTP response with status 200 OK
+        return ResponseEntity.ok(user);
+}
+
 
     @PutMapping("/update/{id}")
     public User updateUser(@PathVariable int id, @RequestBody User updatedData) {
