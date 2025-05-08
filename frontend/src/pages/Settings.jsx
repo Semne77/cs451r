@@ -15,7 +15,11 @@ function SettingsPage() {
         const fetchData = async () => {
             try {
                 const userId = window.location.pathname.split('/').pop();
-                const response = await axios.get(`http://localhost:8080/users/${userId}`);
+                const response = await axios.get(`http://localhost:8080/users/${userId}`, {
+                    headers: {
+                        'user-id': userId,
+                    },
+                });
                 setUserData(response.data);
             } catch (error) {
                 console.error('Error fetching user data', error);
@@ -27,12 +31,17 @@ function SettingsPage() {
 
     const handleChange = (e) => {
         setUserData({ ...userData, [e.target.name]: e.target.value });
+        console.log(e.target.name, e.target.value);
     };
 
     const handleSave = async () => {
         try {
             const userId = window.location.pathname.split('/').pop();
-            await axios.put(`http://localhost:8080/users/${userId}`, userData);
+            await axios.put(`http://localhost:8080/users/update/${userId}`, userData, {
+                headers: {
+                    'user-id': userId
+                }
+            });            
             alert('Changes saved successfully!');
         } catch (error) {
             console.error('Error saving changes', error);
