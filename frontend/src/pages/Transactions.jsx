@@ -269,7 +269,7 @@ export default function Transactions() {
     return (
         <div className="flex">
             <Sidebar />
-            <div className="w-full h-screen mr-8 ml-8 mt-4 flex-col">
+            <div className="w-full mr-8 ml-8 mt-4 flex-col">
                 <h1 className="text-white text-2xl font-bold">Sort & filter your transactions!</h1>
                 <div className="mb-4">
                     <label className="text-white block mb-1">Filter by Merchant</label>
