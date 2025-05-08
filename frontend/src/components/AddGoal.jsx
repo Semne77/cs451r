@@ -21,7 +21,9 @@ const AddGoal = ({ setShowForm, goals, setGoals, userId }) => {
 
   // Update endDate when period changes
   useEffect(() => {
-    const end = new Date(today);
+    const start = new Date(formData.startDate);
+    const end = new Date(start);
+
     switch (formData.period) {
       case "week":
         end.setDate(end.getDate() + 7);
@@ -35,8 +37,13 @@ const AddGoal = ({ setShowForm, goals, setGoals, userId }) => {
       default:
         break;
     }
-    setFormData((prev) => ({ ...prev, endDate: end.toISOString().split("T")[0] }));
-  }, [formData.period]);
+
+    setFormData((prev) => ({
+      ...prev,
+      endDate: end.toISOString().split("T")[0],
+    }));
+  }, [formData.period, formData.startDate]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -121,6 +128,18 @@ const AddGoal = ({ setShowForm, goals, setGoals, userId }) => {
               <option value="year">Year</option>
             </select>
           </div>
+
+          <div>
+            <label className="block text-sm">Start Date</label>
+            <input
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              className="w-full p-1 text-white rounded bg-gray-800"
+              required
+            />
+          </div>
+
 
           <div className="text-sm text-gray-400">
             Start Date: <span className="text-white">{formData.startDate}</span><br />
